@@ -128,3 +128,6 @@ export function historyReducer(history: HistoryState, action: Action): HistorySt
   if (NOT_UNDOABLE.has(action.type)) return { ...history, present: next }
   return { present: next, past: [...history.past, history.present].slice(-HISTORY_LIMIT) }
 }
+
+/** What gets synced: everything except which show this device has open. */
+export const signature = (s: BandState) => JSON.stringify({ ...s, activeShowId: null })

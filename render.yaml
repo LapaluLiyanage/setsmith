@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: setsmith
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start -w server
+    healthCheckPath: /
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_KEY
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: GETSONGBPM_API_KEY
+        sync: false

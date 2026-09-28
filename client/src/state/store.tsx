@@ -5,7 +5,7 @@ import {
 } from 'react'
 import { supabase } from '../lib/supabase'
 import type { BandState, Role } from '../lib/types'
-import { historyReducer, type Action, type HistoryState } from './reducer'
+import { historyReducer, signature, type Action, type HistoryState } from './reducer'
 import { sampleState } from './sampleData'
 
 const STORAGE_KEY = 'setsmith:v1'
@@ -37,7 +37,6 @@ const lsSet = (key: string, value: string | null) => {
 }
 
 /** The part of the band data that gets shared; which show a person is looking at stays personal. */
-const signature = (s: BandState) => JSON.stringify({ ...s, activeShowId: null })
 
 export interface BandInfo { id: string; name: string; role: Role }
 export interface AccessRow { userId: string; role: Role; displayName: string }

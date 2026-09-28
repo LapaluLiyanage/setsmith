@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import type { Role, Show } from '../lib/types'
 import { CloudSection } from './CloudSection'
 import { useDrawerIn } from '../lib/motion'
+import { NOTE_NAMES } from '../lib/music'
 import { newId, useStore } from '../state/store'
 
 const ROLE_HELP: Record<Role, string> = {
@@ -18,6 +19,13 @@ export function BandPanel({ onClose, show }: { onClose: () => void; show: Show |
   const [name, setName] = useState('')
   const [role, setRole] = useState<Role>('viewer')
   const [isSinger, setIsSinger] = useState(true)
+
+  function setRange(memberId: string, cur: { from: number; to: number } | undefined, side: 'from' | 'to', v: string) {
+    if (v === '' ) return dispatch({ type: 'updateMember', memberId, patch: { keyRange: undefined } })
+    const n = Number(v)
+    const next = side === 'from' ? { from: n, to: cur?.to ?? n } : { from: cur?.from ?? n, to: n }
+    dispatch({ type: 'updateMember', memberId, patch: { keyRange: next } })
+  }
 
   function onAdd(e: FormEvent) {
     e.preventDefault()
@@ -55,6 +63,25 @@ export function BandPanel({ onClose, show }: { onClose: () => void; show: Show |
                     onChange={(e) => dispatch({ type: 'updateMember', memberId: m.id, patch: { isSinger: e.target.checked } })} />
                   Singer
                 </label>
+                {m.isSinger && (
+                  <span className="check" title="Comfortable range for the song's tonic; used to suggest a transpose">
+                    Range
+                    <select id={`member-range-from-${m.id}`} aria-label="Range from" value={m.keyRange?.from ?? ''}
+                      onChange={(e) => setRange(m.id, m.keyRange, 'from', e.target.value)}>
+                      <option value="">Any</option>
+                      {NOTE_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}
+                    </select>
+                    {m.keyRange && (
+                      <>
+                        –
+                        <select id={`member-range-to-${m.id}`} aria-label="Range to" value={m.keyRange.to}
+                          onChange={(e) => setRange(m.id, m.keyRange, 'to', e.target.value)}>
+                          {NOTE_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}
+                        </select>
+                      </>
+                    )}
+                  </span>
+                )}
                 <button className="icon-btn" aria-label={`Remove ${m.name}`}
                   onClick={() => dispatch({ type: 'removeMember', memberId: m.id })}>âœ•</button>
               </li>

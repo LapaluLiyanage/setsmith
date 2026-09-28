@@ -2,7 +2,7 @@ import { gsap } from 'gsap'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { fetchVideo, lookupBpm, searchYouTube, type BpmMatch, type VideoInfo } from '../lib/api'
 import { reducedMotion, useDrawerIn } from '../lib/motion'
-import { NOTE_NAMES, camelot, parseKey } from '../lib/music'
+import { NOTE_NAMES, camelot, parseKey, suggestTranspose } from '../lib/music'
 import { singerBadge } from '../lib/singers'
 import { addTap, bpmFromTaps } from '../lib/tapTempo'
 import type { BpmSource, Member, MusicalKey, SetlistItem, Song } from '../lib/types'
@@ -171,6 +171,9 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const key = valueToKey(keyValue)
   const playedKey = key ? { tonic: (((key.tonic + transpose) % 12) + 12) % 12, mode: key.mode } : null
   const tapBpm = bpmFromTaps(taps)
+  const singerRange = members.find((m) => m.id === singerId)?.keyRange
+  const suggested = suggestTranspose(key, transpose, singerRange)
+  const suggestedKey = key && suggested !== null ? NOTE_NAMES[(((key.tonic + suggested) % 12) + 12) % 12] + (key.mode === 'minor' ? 'm' : '') : null
 
   return (
     <div className="scrim" ref={scrimRef} onClick={onClose}>
@@ -287,7 +290,13 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                     <button type="button" aria-label="Transpose down" onClick={() => setTranspose((t) => Math.max(-11, t - 1))}>−</button>
                     <span>{transpose > 0 ? `+${transpose}` : transpose}</span>
                     <button type="button" aria-label="Transpose up" onClick={() => setTranspose((t) => Math.min(11, t + 1))}>+</button>
-                  </div></div>
+                  </div>
+                  {suggested !== null && (
+                    <button type="button" className="pill" onClick={() => setTranspose(suggested)}>
+                      Suggest {suggested > 0 ? `+${suggested}` : suggested} ({suggestedKey}) for this singer
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="grid-2">

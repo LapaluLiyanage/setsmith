@@ -80,7 +80,18 @@ supabase/  schema.sql with row-level security per band
 2. ~~PDF export and send~~ (Sinhala font included)
 3. ~~Supabase accounts, band invites with roles, read-only share link~~
 4. ~~Song library view with filters~~ (search, singer, BPM range, Camelot key, language; add to any session)
-5. Singer key ranges and transpose suggestions
+5. ~~Singer key ranges and transpose suggestions~~ (set a singer's comfortable tonic range in Band; the song drawer offers a one-tap transpose)
 6. ~~Stage view for phones~~ (big-type now/next, beat-pulse dot, swipe or arrow keys, keeps the screen on)
 7. ~~Apply the Claude Design UI~~ (setlist editor, add-song, band and export panels; light/dark;
    GSAP card entrance, FLIP reorder, toasts; Three.js energy map)
+
+## Deploy
+
+One Node service hosts the API and the built client (`render.yaml` is a Render Blueprint):
+
+1. On render.com choose New → Blueprint and pick this repo.
+2. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` (the publishable key; needed at build time), plus optional `YOUTUBE_API_KEY` and `GETSONGBPM_API_KEY`.
+3. In Supabase → Authentication → URL Configuration, set the Site URL and add the deployed URL to the redirect list so magic links and invites return to the app.
+4. Optional: turn off "Confirm email" in Supabase Auth providers if you want sign-up to work without an inbox round trip.
+
+The same build also works on any static host for the client alone; YouTube search and BPM lookup then need the API reachable at `/api`.

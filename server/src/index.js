@@ -1,4 +1,6 @@
 import express from 'express'
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { YOUTUBE_ID, mapBpmSearch, mapOembed, mapVideo } from './mappers.js'
 
 const PORT = Number(process.env.PORT ?? 4000)
@@ -86,6 +88,13 @@ app.get('/api/bpm', wrap(async (req, res) => {
   )
   res.json({ matches: mapBpmSearch(body) })
 }))
+
+// In production the API also serves the built client, so one service hosts everything.
+const dist = fileURLToPath(new URL('../../client/dist', import.meta.url))
+if (existsSync(dist)) {
+  app.use(express.static(dist))
+  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(`${dist}/index.html`))
+}
 
 app.listen(PORT, () => {
   console.log(`Setsmith API on http://localhost:${PORT}`)

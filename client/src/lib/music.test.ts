@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { camelot, formatKey, keysCompatible, parseKey, transposeKey } from './music'
+import { camelot, formatKey, inRange, keysCompatible, parseKey, suggestTranspose, transposeKey } from './music'
 
 describe('parseKey', () => {
   it.each([
@@ -48,5 +48,23 @@ describe('transposeKey', () => {
   it('wraps both directions', () => {
     expect(formatKey(transposeKey(parseKey('C')!, -2))).toBe('B♭ major')
     expect(formatKey(transposeKey(parseKey('B')!, 2))).toBe('C♯ major')
+  })
+})
+
+describe('suggestTranspose', () => {
+  const C = parseKey('C')!
+  it('returns null with no range, no key, or when already comfortable', () => {
+    expect(suggestTranspose(C, 0, undefined)).toBeNull()
+    expect(suggestTranspose(null, 0, { from: 0, to: 4 })).toBeNull()
+    expect(suggestTranspose(C, 0, { from: 0, to: 4 })).toBeNull()
+  })
+  it('finds the smallest shift, preferring up on ties', () => {
+    expect(suggestTranspose(C, 0, { from: 2, to: 5 })).toBe(2) // C -> D
+    expect(suggestTranspose(C, 0, { from: 8, to: 10 })).toBe(-2) // C -> B flat
+  })
+  it('accounts for current transpose and wraps ranges', () => {
+    expect(suggestTranspose(C, 1, { from: 10, to: 1 })).toBeNull() // C# inside A#..C#
+    expect(inRange(11, { from: 10, to: 1 })).toBe(true)
+    expect(inRange(5, { from: 10, to: 1 })).toBe(false)
   })
 })

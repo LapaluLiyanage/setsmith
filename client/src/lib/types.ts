@@ -17,6 +17,7 @@ export interface Member {
   name: string
   role: Role
   isSinger: boolean
+  keyRange?: { from: number; to: number }
 }
 
 /** A song in the band's library. Reused across shows so BPM/key are looked up once. */

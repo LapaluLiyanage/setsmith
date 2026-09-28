@@ -56,3 +56,26 @@ export function keysCompatible(a: MusicalKey, b: MusicalKey): boolean {
 export function transposeKey(key: MusicalKey, semitones: number): MusicalKey {
   return { tonic: (((key.tonic + semitones) % 12) + 12) % 12, mode: key.mode }
 }
+
+export interface KeyRange {
+  from: number
+  to: number
+}
+
+export function inRange(pitchClass: number, range: KeyRange): boolean {
+  const span = (range.to - range.from + 12) % 12
+  return (pitchClass - range.from + 12) % 12 <= span
+}
+
+/** Smallest semitone shift (-6..+6) that lands the song's tonic inside the singer's comfortable tonic range; null if already inside or unknown. */
+export function suggestTranspose(key: MusicalKey | null, current: number, range: KeyRange | undefined): number | null {
+  if (!key || !range) return null
+  const played = (key.tonic + current + 12 * 12) % 12
+  if (inRange(played, range)) return null
+  for (let d = 1; d <= 6; d++) {
+    for (const s of [d, -d]) {
+      if (inRange((played + s + 12) % 12, range)) return current + s
+    }
+  }
+  return null
+}
