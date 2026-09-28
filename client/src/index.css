@@ -185,3 +185,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* Export */
+.drawer--wide { width: min(760px, 100%); }
+.export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.export-actions a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.small { font-size: 12px; margin: 0; }
+.pdf-preview { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); min-height: 200px; display: grid; place-items: center; }
+.pdf-preview iframe { width: 100%; height: 70vh; border: 0; border-radius: var(--radius); background: #fff; }
+details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }

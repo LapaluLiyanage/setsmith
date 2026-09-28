@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { BandPanel } from './components/BandPanel'
+import { ExportPanel } from './components/ExportPanel'
 import { SetlistEditor } from './components/SetlistEditor'
 import { newId, useStore } from './state/store'
 
 export default function App() {
   const { state, dispatch, canUndo } = useStore()
   const [bandOpen, setBandOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const show = state.shows.find((s) => s.id === state.activeShowId) ?? null
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function App() {
           <button className="btn" onClick={addShow}>New show</button>
           <button className="btn" onClick={() => setBandOpen(true)}>Band</button>
           <button className="btn" disabled={!canUndo} onClick={() => dispatch({ type: 'undo' })} title="Undo (Ctrl+Z)">Undo</button>
-          <button className="btn btn--primary" disabled title="PDF export is the next milestone">Export PDF</button>
+          <button className="btn btn--primary" disabled={!show} onClick={() => setExportOpen(true)}>Export PDF</button>
         </div>
       </header>
 
@@ -66,6 +68,7 @@ export default function App() {
       </main>
 
       {bandOpen && <BandPanel onClose={() => setBandOpen(false)} />}
+      {exportOpen && show && <ExportPanel show={show} onClose={() => setExportOpen(false)} />}
     </div>
   )
 }

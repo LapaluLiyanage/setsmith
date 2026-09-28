@@ -18,6 +18,10 @@ BPM and key → rearrange with drag-and-drop or quick swap → send the band a P
 - Auto-arrange a session by BPM (build up, cool down, peak in the middle) with an energy sparkline
 - Undo (button or Ctrl+Z)
 - Band members with roles (manager / editor / viewer)
+- **PDF export**: a table per session (singer, BPM, key with Camelot code, transpose, notes, time),
+  song titles link to YouTube, a QR code per song for printed copies, songs-per-singer summary.
+  Download, share straight to WhatsApp on phones, open an email, or copy a text version.
+  Known gap: song titles typed in Sinhala script won't print yet (the PDF uses built-in Latin fonts).
 
 Data is saved in the browser for now. Supabase (accounts, sharing, sync across the band) is the next milestone.
 
@@ -58,7 +62,7 @@ supabase/  schema.sql with row-level security per band
 ## Roadmap
 
 1. ~~Setlist editor, drag and swap, BPM/key, tap tempo~~
-2. PDF export (sessions, singers, BPM, key, clickable YouTube links, QR codes) and send
+2. ~~PDF export and send~~ (next: Sinhala-script font in the PDF)
 3. Supabase accounts, band invites with roles, read-only share link
 4. Song library view with filters
 5. Singer key ranges and transpose suggestions
