@@ -8,6 +8,8 @@ export interface MusicalKey {
 
 export type BpmSource = 'lookup' | 'analysis' | 'tap' | 'manual'
 
+export type Lang = 'SI' | 'EN'
+
 export type Role = 'manager' | 'editor' | 'viewer'
 
 export interface Member {
@@ -27,6 +29,8 @@ export interface Song {
   bpm: number | null
   key: MusicalKey | null
   bpmSource: BpmSource | null
+  /** Set by hand in the library; otherwise guessed from the script of the title. */
+  lang?: Lang
 }
 
 /** One slot in a session's running order. */

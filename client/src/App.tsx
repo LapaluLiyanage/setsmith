@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BandPanel } from './components/BandPanel'
 import { ExportPanel } from './components/ExportPanel'
+import { LibraryView } from './components/LibraryView'
 import { SetlistEditor } from './components/SetlistEditor'
 import { StageView } from './components/StageView'
 import { newId, useStore } from './state/store'
@@ -24,6 +25,7 @@ export default function App() {
   const [bandOpen, setBandOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [stageOpen, setStageOpen] = useState(false)
+  const [view, setView] = useState<'setlist' | 'library'>('setlist')
   const show = state.shows.find((s) => s.id === state.activeShowId) ?? null
 
   useEffect(() => {
@@ -59,9 +61,11 @@ export default function App() {
           </div>
           <div className="topbar__spacer" />
           <nav className="nav" aria-label="Main">
-            <span className="nav__item nav__item--active" aria-current="page">Setlist</span>
+            <button className={'nav__item nav__item--keep' + (view === 'setlist' ? ' nav__item--active' : '')}
+              aria-current={view === 'setlist' ? 'page' : undefined} onClick={() => setView('setlist')}>Setlist</button>
             <button className="nav__item nav__item--keep" disabled={!show} onClick={() => setStageOpen(true)}>Stage view</button>
-            <button className="nav__item" disabled title="Coming soon">Library <span className="nav__soon">SOON</span></button>
+            <button className={'nav__item nav__item--keep' + (view === 'library' ? ' nav__item--active' : '')}
+              aria-current={view === 'library' ? 'page' : undefined} onClick={() => setView('library')}>Library</button>
             <button className="nav__item nav__item--keep" onClick={() => setBandOpen(true)}>Band</button>
             <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
               {theme === 'dark' ? 'Light' : 'Dark'}
@@ -74,7 +78,9 @@ export default function App() {
           <button className="pill pill--dark" onClick={addShow}>+ New show</button>
         </header>
 
-        {show ? (
+        {view === 'library' ? (
+          <LibraryView show={show} />
+        ) : show ? (
           <SetlistEditor key={show.id} show={show} theme={theme} onShare={() => setBandOpen(true)} onExport={() => setExportOpen(true)} onStage={() => setStageOpen(true)} />
         ) : (
           <div className="empty">

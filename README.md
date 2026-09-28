@@ -66,7 +66,7 @@ supabase/  schema.sql with row-level security per band
 1. ~~Setlist editor, drag and swap, BPM/key, tap tempo~~
 2. ~~PDF export and send~~ (next: Sinhala-script font in the PDF)
 3. Supabase accounts, band invites with roles, read-only share link
-4. Song library view with filters
+4. ~~Song library view with filters~~ (search, singer, BPM range, Camelot key, language; add to any session)
 5. Singer key ranges and transpose suggestions
 6. ~~Stage view for phones~~ (big-type now/next, beat-pulse dot, swipe or arrow keys, keeps the screen on)
 7. ~~Apply the Claude Design UI~~ (setlist editor, add-song, band and export panels; light/dark;

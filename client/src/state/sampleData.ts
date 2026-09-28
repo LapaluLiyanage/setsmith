@@ -7,6 +7,7 @@ const song = (
 ): Song => ({
   id, title, artist, youtubeId, durationSec, bpm,
   key: key ? parseKey(key) : null, bpmSource: bpm ? 'lookup' : null,
+  lang: ['mal-mitak', 'sanda-kan', 'baila'].includes(id) ? 'SI' : 'EN',
 })
 
 const songs: Song[] = [
