@@ -7,6 +7,7 @@ type Mode = 'signin' | 'signup' | 'magic'
 const TITLES: Record<Mode, string> = { signin: 'Sign in', signup: 'Create account', magic: 'Email me a link' }
 
 export function AuthScreen() {
+  const { cloud } = useStore()
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,12 +41,21 @@ export function AuthScreen() {
       <form className="gate__card" onSubmit={submit}>
         <span className="eyebrow">Setsmith</span>
         <h1>{TITLES[mode]}</h1>
-        <p className="muted">Sign in to keep your band’s setlists in sync across phones and laptops, and to share access.</p>
-        <p className="gate__note">
-          Only the person managing setlists needs an account. Other players don’t sign in at all —
-          the manager sends them a link (Band → Public link) that opens straight to the live setlist and
-          current song, no login required.
-        </p>
+        {cloud.pendingInvite ? (
+          <p className="gate__note">
+            You've been invited to a band. Sign in, or create an account if you don't have one — you'll be
+            added to it automatically right after.
+          </p>
+        ) : (
+          <>
+            <p className="muted">Sign in to keep your band’s setlists in sync across phones and laptops, and to share access.</p>
+            <p className="gate__note">
+              Only the person managing setlists needs an account. Other players don’t sign in at all —
+              the manager sends them a link (Band → Public link) that opens straight to the live setlist and
+              current song, no login required.
+            </p>
+          </>
+        )}
         <div className="gate__tabs" role="tablist">
           {(Object.keys(TITLES) as Mode[]).map((m) => (
             <button type="button" key={m} role="tab" aria-selected={mode === m} className={'lf__preset' + (mode === m ? ' is-on' : '')}

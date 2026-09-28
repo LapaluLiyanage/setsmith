@@ -45,6 +45,7 @@ export interface Cloud {
   access: AccessRow[]
   status: SyncStatus
   notice: string | null
+  pendingInvite: boolean
   nowPlaying: NowPlaying | null
   setNowPlaying: (showId: string, itemId: string) => void
   dismissNotice: () => void
@@ -86,6 +87,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus>('saved')
   const [notice, setNotice] = useState<string | null>(null)
   const [nowPlaying, setNowPlayingState] = useState<NowPlaying | null>(null)
+  const [pendingInvite, setPendingInvite] = useState(() => lsGet(INVITE_KEY) !== null)
 
   const userId = session?.user.id ?? null
   const latest = useRef(history.present)
@@ -102,7 +104,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const pending = readInviteFromUrl()
-    if (pending) lsSet(INVITE_KEY, pending)
+    if (pending) {
+      lsSet(INVITE_KEY, pending)
+      setPendingInvite(true)
+    }
   }, [])
 
   useEffect(() => {
@@ -149,6 +154,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         lsSet(INVITE_KEY, null)
         const { data, error } = await supabase.rpc('accept_invite', { p_code: code })
         if (cancelled) return
+        setPendingInvite(false)
         if (error) setNotice('That invite link is invalid or has expired.')
         else {
           setBandId(data as string)
@@ -336,7 +342,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const cloud: Cloud = {
     configured: !!supabase, gate, userId, email: session?.user.email ?? null, bands: bands ?? [], band, role, readOnly,
-    access, status, notice, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), signOut, createBand,
+    access, status, notice, pendingInvite, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), signOut, createBand,
     joinWithCode, switchBand: setBandId, refreshAccess,
   }
 
