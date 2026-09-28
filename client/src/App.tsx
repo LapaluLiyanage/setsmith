@@ -105,6 +105,8 @@ export default function App() {
         )}
       </div>
 
+      <a className="credit" href="https://lapalu.me" target="_blank" rel="noreferrer">Built by Lapalu Liyanage</a>
+
       {cloud.notice && <div className="toast" role="status" onClick={cloud.dismissNotice}>{cloud.notice}</div>}
       {bandOpen && <BandPanel show={show} onClose={() => setBandOpen(false)} />}
       {exportOpen && show && <ExportPanel show={show} onClose={() => setExportOpen(false)} />}

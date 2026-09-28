@@ -40,6 +40,7 @@ const lsSet = (key: string, value: string | null) => {
 
 export interface BandInfo { id: string; name: string; role: Role }
 export interface AccessRow { userId: string; role: Role; displayName: string }
+export interface NowPlaying { showId: string; itemId: string }
 export type SyncStatus = 'local' | 'saving' | 'saved' | 'error'
 export type Gate = 'app' | 'loading' | 'auth' | 'onboard'
 
@@ -55,6 +56,8 @@ export interface Cloud {
   access: AccessRow[]
   status: SyncStatus
   notice: string | null
+  nowPlaying: NowPlaying | null
+  setNowPlaying: (showId: string, itemId: string) => void
   dismissNotice: () => void
   goLocal: () => void
   goCloud: () => void
@@ -96,6 +99,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [access, setAccess] = useState<AccessRow[]>([])
   const [status, setStatus] = useState<SyncStatus>('local')
   const [notice, setNotice] = useState<string | null>(null)
+  const [nowPlaying, setNowPlayingState] = useState<NowPlaying | null>(null)
 
   const userId = session?.user.id ?? null
   const latest = useRef(history.present)
@@ -207,16 +211,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setAccess((data ?? []).map((r) => ({ userId: r.user_id as string, role: r.role as Role, displayName: r.display_name as string })))
   }, [bandId])
 
+  const fetchNowPlaying = useCallback(async (id: string) => {
+    if (!supabase) return
+    const { data } = await supabase.from('now_playing').select('show_id, item_id').eq('band_id', id).maybeSingle()
+    setNowPlayingState(data ? { showId: data.show_id as string, itemId: data.item_id as string } : null)
+  }, [])
+
   // Load the chosen band's document and keep it live.
   const bandRole = band?.id
   useEffect(() => {
     if (!supabase || !userId || localMode || !bandRole) {
       setDataReady(false)
+      setNowPlayingState(null)
       return
     }
     const client = supabase
     let cancelled = false
     setDataReady(false)
+    setNowPlayingState(null)
     lsSet(BAND_KEY, bandRole)
     ;(async () => {
       const ok = await fetchBandData(bandRole)
@@ -224,6 +236,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setDataReady(ok)
       setStatus(ok ? 'saved' : 'error')
       refreshAccess()
+      fetchNowPlaying(bandRole)
     })()
     const channel = client
       .channel(`band:${bandRole}`)
@@ -237,12 +250,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         refreshAccess()
         refreshBands()
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'now_playing', filter: `band_id=eq.${bandRole}` }, (payload) => {
+        const row = payload.new as { show_id?: string; item_id?: string } | undefined
+        if (row?.show_id && row?.item_id) setNowPlayingState({ showId: row.show_id, itemId: row.item_id })
+      })
       .subscribe()
     return () => {
       cancelled = true
       client.removeChannel(channel)
     }
-  }, [userId, localMode, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands])
+  }, [userId, localMode, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands, fetchNowPlaying])
 
   const flush = useCallback(async () => {
     if (!supabase || !bandRole || saving.current) return
@@ -312,7 +329,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const clean = name.trim()
     if (!clean) return 'Give the band a name.'
     const fresh: BandState = { bandName: clean, members: [], songs: {}, shows: [], activeShowId: null }
-    const seed = cloudActive ? fresh : { ...latest.current, bandName: clean }
+    const hasLocalWork = lsGet(STORAGE_KEY) !== null
+    const seed = cloudActive || !hasLocalWork ? fresh : { ...latest.current, bandName: clean }
     const display = session.user.email?.split('@')[0] ?? ''
     const { data, error } = await supabase.rpc('create_band', { p_name: clean, p_data: seed, p_display: display })
     if (error) return error.message
@@ -331,6 +349,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setBandId(data as string)
     return null
   }, [refreshBands])
+
+  const setNowPlaying = useCallback((showId: string, itemId: string) => {
+    if (!supabase || !bandRole || readOnly) return
+    setNowPlayingState({ showId, itemId })
+    supabase.rpc('set_now_playing', { p_band: bandRole, p_show: showId, p_item: itemId }).then(({ error }) => {
+      if (error) setNotice(`Couldn't update the stage: ${error.message}`)
+    })
+  }, [bandRole, readOnly])
 
   const goLocal = useCallback(() => {
     lsSet(LOCAL_KEY, '1')
@@ -354,7 +380,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const cloud: Cloud = {
     configured: !!supabase, gate, userId, email: session?.user.email ?? null, bands: bands ?? [], band, role, readOnly,
-    access, status, notice, dismissNotice: () => setNotice(null), goLocal, goCloud, signOut, createBand,
+    access, status, notice, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), goLocal, goCloud, signOut, createBand,
     joinWithCode, switchBand: setBandId, refreshAccess,
   }
 

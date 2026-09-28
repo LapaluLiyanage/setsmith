@@ -1,3 +1,4 @@
+import { transposeChordSheet } from './chordSheet'
 import { camelot, formatKey, transposeKey } from './music'
 import { formatDuration } from './setlist'
 import { singerBadge, type SingerBadge } from './singers'
@@ -23,6 +24,8 @@ export interface StageSong {
   duration: string
   notes: string
   youtubeId: string | null
+  /** Song's chord sheet, transposed for this slot; null when the song has none. */
+  chordSheet: string | null
 }
 
 const short = (text: string) => text.replace(' major', '').replace(' minor', 'm')
@@ -53,6 +56,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         duration: song.durationSec ? formatDuration(song.durationSec) : '',
         notes: item.notes,
         youtubeId: song.youtubeId,
+        chordSheet: song.chordSheet ? transposeChordSheet(song.chordSheet, item.transpose) : null,
       })
     })
   }

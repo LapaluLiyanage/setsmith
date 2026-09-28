@@ -40,6 +40,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
   const [dragSessions, setDragSessions] = useState<Session[] | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [playingId, setPlayingId] = useState<string | null>(null)
   const [drawer, setDrawer] = useState<DrawerState>(null)
   const [toast, setToast] = useState<{ msg: string; n: number } | null>(null)
   const sessions = dragSessions ?? show.sessions
@@ -108,7 +109,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
   )
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSelectedId(null)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setSelectedId(null); setPlayingId(null) } }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
@@ -124,6 +125,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
     setActiveId(String(e.active.id))
     setDragSessions(show.sessions)
     setSelectedId(null)
+    setPlayingId(null)
     setToast(null)
   }
 
@@ -273,6 +275,8 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
               members={members}
               startSec={starts[i]}
               selectedId={selectedId}
+              playingId={playingId}
+              onPlay={(itemId) => setPlayingId((p) => (p === itemId ? null : itemId))}
               onTap={onTap}
               onAddSong={() => setDrawer({ mode: 'add', sessionId: session.id })}
               onEditItem={(itemId) => setDrawer({ mode: 'edit', itemId })}

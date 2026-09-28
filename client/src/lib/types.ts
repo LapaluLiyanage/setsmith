@@ -32,6 +32,8 @@ export interface Song {
   bpmSource: BpmSource | null
   /** Set by hand in the library; otherwise guessed from the script of the title. */
   lang?: Lang
+  /** ChordPro-style: a chord line above each lyric line. Transposed per setlist item for Stage view. */
+  chordSheet?: string | null
 }
 
 /** One slot in a session's running order. */

@@ -23,6 +23,7 @@ export function parseYouTubeId(input: string): string | null {
 
 export const watchUrl = (id: string) => `https://www.youtube.com/watch?v=${id}`
 export const thumbUrl = (id: string) => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`
+export const embedUrl = (id: string) => `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1`
 
 /** ISO-8601 duration from the YouTube API ("PT4M13S") to seconds. */
 export function parseIsoDuration(iso: string): number {

@@ -57,6 +57,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [keyValue, setKeyValue] = useState(keyToValue(existing?.song.key ?? null))
   const [transpose, setTranspose] = useState(existing?.item.transpose ?? 0)
   const [notes, setNotes] = useState(existing?.item.notes ?? '')
+  const [chordSheet, setChordSheet] = useState(existing?.song.chordSheet ?? '')
   const [status, setStatus] = useState<string | null>(null)
   const [matches, setMatches] = useState<BpmMatch[]>([])
   const [taps, setTaps] = useState<number[]>([])
@@ -154,6 +155,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       bpm: bpm ? Math.round(Number(bpm)) : null,
       key: valueToKey(keyValue),
       bpmSource: bpm ? (bpmSource ?? 'manual') : null,
+      chordSheet: chordSheet.trim() ? chordSheet : null,
     }
     const itemFields = { singerId, transpose, notes }
     if (target.mode === 'add') {
@@ -261,6 +263,9 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                   {bpm && bpmSource ? <span className="tag" style={{ alignSelf: 'flex-start' }}>{SOURCE_LABEL[bpmSource]}</span>
                     : <p>Look it up, or play the video and tap along to the beat.</p>}
                   <button type="button" className="pill" style={{ alignSelf: 'flex-start' }} onClick={onLookupBpm}>Look up BPM &amp; key</button>
+                  <a className="muted" style={{ fontSize: 11 }} href="https://getsongbpm.com" target="_blank" rel="noreferrer">
+                    BPM &amp; key data via GetSongBPM.com
+                  </a>
                 </div>
                 <button type="button" ref={tapRef} className="tap" onClick={onTap} aria-label="Tap tempo">
                   <b>Tap</b><span>{taps.length < 2 ? 'TAP THE BEAT' : `${taps.length} TAPS · ${tapBpm}`}</span>
@@ -306,6 +311,11 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
 
               <label className="field"><span className="eyebrow">Notes</span>
                 <textarea id="song-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Intro cue, count-in, who starts…" /></label>
+
+              <label className="field"><span className="eyebrow">Chord sheet (optional)</span>
+                <textarea id="song-chords" className="mono" rows={6} value={chordSheet} onChange={(e) => setChordSheet(e.target.value)}
+                  placeholder={'Chords on their own line above the lyrics, e.g.\nG           D\nAmazing grace how sweet'} />
+              </label>
             </>
           )}
         </form>

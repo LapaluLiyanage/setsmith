@@ -56,11 +56,22 @@ create table shares (
   unique (band_id, show_id)
 );
 
+-- Which setlist item Stage view is currently on, per band. Kept separate from band_data
+-- so the coordinator's "next song" tap is instant, not gated behind the save debounce/rev check.
+create table now_playing (
+  band_id uuid primary key references bands(id) on delete cascade,
+  show_id text not null,
+  item_id text not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id)
+);
+
 alter table bands enable row level security;
 alter table band_access enable row level security;
 alter table band_data enable row level security;
 alter table invites enable row level security;
 alter table shares enable row level security;
+alter table now_playing enable row level security;
 
 create function my_role(b uuid) returns band_role
 language sql stable security definer set search_path = public as $$
@@ -79,6 +90,9 @@ create policy "manager removes members" on band_access for delete to authenticat
   using (my_role(band_id) = 'manager' and user_id <> (select auth.uid()));
 
 create policy "members read band data" on band_data for select to authenticated
+  using (my_role(band_id) is not null);
+
+create policy "members read now playing" on now_playing for select to authenticated
   using (my_role(band_id) is not null);
 
 create policy "manager reads invites" on invites for select to authenticated
@@ -122,6 +136,20 @@ begin
    where band_id = p_band and rev = p_expected
    returning rev into new_rev;
   return coalesce(new_rev, -1);
+end $$;
+
+-- Moves the shared "current song" pointer. Viewers can only read it (see the RLS policy above);
+-- managers and editors drive it from Stage view.
+create function set_now_playing(p_band uuid, p_show text, p_item text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if my_role(p_band) is null or my_role(p_band) = 'viewer' then
+    raise exception 'not allowed';
+  end if;
+  insert into now_playing (band_id, show_id, item_id, updated_at, updated_by)
+    values (p_band, p_show, p_item, now(), auth.uid())
+  on conflict (band_id) do update
+    set show_id = excluded.show_id, item_id = excluded.item_id, updated_at = now(), updated_by = auth.uid();
 end $$;
 
 create function accept_invite(p_code text) returns uuid
@@ -183,7 +211,7 @@ end $$;
 
 revoke execute on all functions in schema public from public, anon;
 grant execute on function my_role(uuid), create_band(text, jsonb, text), save_band_data(uuid, jsonb, integer),
-  accept_invite(text), set_display_name(uuid, text) to authenticated;
+  set_now_playing(uuid, text, text), accept_invite(text), set_display_name(uuid, text) to authenticated;
 grant execute on function get_shared(text) to anon, authenticated;
 
-alter publication supabase_realtime add table band_data, band_access;
+alter publication supabase_realtime add table band_data, band_access, now_playing;

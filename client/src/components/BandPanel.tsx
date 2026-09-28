@@ -73,7 +73,7 @@ export function BandPanel({ onClose, show }: { onClose: () => void; show: Show |
                     </select>
                     {m.keyRange && (
                       <>
-                        –
+                        {'â€“'}
                         <select id={`member-range-to-${m.id}`} aria-label="Range to" value={m.keyRange.to}
                           onChange={(e) => setRange(m.id, m.keyRange, 'to', e.target.value)}>
                           {NOTE_NAMES.map((n, i) => <option key={i} value={i}>{n}</option>)}

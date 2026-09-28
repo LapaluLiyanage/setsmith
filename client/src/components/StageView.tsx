@@ -5,6 +5,7 @@ import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
 import { useStore } from '../state/store'
+import { SongPlayer } from './SongPlayer'
 
 const SWIPE_PX = 50
 
@@ -40,9 +41,11 @@ function useWakeLock() {
 }
 
 export function StageView({ show, onClose }: { show: Show; onClose: () => void }) {
-  const { state } = useStore()
+  const { state, cloud } = useStore()
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
   const [index, setIndex] = useState(0)
+  const [showChords, setShowChords] = useState(false)
+  const [showVideo, setShowVideo] = useState(false)
   const direction = useRef(1)
   const x0 = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -51,14 +54,32 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const clock = useClock()
   useWakeLock()
 
+  // Synced shows: everyone follows the shared pointer; only managers/editors can move it.
+  const synced = cloud.configured && !!cloud.band
+  const canControl = !cloud.readOnly
+
   const cur = list[Math.min(index, list.length - 1)]
   const next = list[index + 1]
+  const liveIndex = synced && cloud.nowPlaying?.showId === show.id
+    ? list.findIndex((s) => s.itemId === cloud.nowPlaying!.itemId) : -1
+  const offLive = !canControl && liveIndex >= 0 && liveIndex !== index
+
+  // Whenever the coordinator actually moves to a song, jump there — even if a follower had
+  // browsed off to look ahead. Controllers get pulled to it too (e.g. another editor moved it),
+  // but their own moves land here first anyway, so this never fights their own navigation.
+  useEffect(() => {
+    if (liveIndex < 0 || liveIndex === index) return
+    direction.current = liveIndex > index ? 1 : -1
+    setIndex(liveIndex)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloud.nowPlaying, synced, show.id])
 
   function go(step: number) {
     const i = Math.max(0, Math.min(list.length - 1, index + step))
     if (i === index) return
     direction.current = step
     setIndex(i)
+    if (synced && canControl && list[i]) cloud.setNowPlaying(show.id, list[i].itemId)
   }
 
   useEffect(() => {
@@ -77,6 +98,9 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     const ctx = gsap.context(() => gsap.fromTo(rootRef.current, { opacity: 0 }, { opacity: 1, duration: 0.3 }))
     return () => ctx.revert()
   }, [])
+
+  // Stop any playing video when the song changes, so it doesn't keep playing underneath.
+  useEffect(() => { setShowVideo(false) }, [index])
 
   // New song slides in from the side you swiped towards.
   useLayoutEffect(() => {
@@ -114,6 +138,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             <span>{cur ? `${cur.sessionName.toUpperCase()} SESSION` : show.name}</span>
             <b>{cur ? `Song ${cur.inSession} of ${cur.sessionSize} · ${cur.number}/${list.length} tonight` : 'No songs yet'}</b>
           </div>
+          {synced && (
+            <span className="stage__sync" title={canControl ? 'You control what everyone sees' : "Following the coordinator's phone"}>
+              {canControl ? '● LIVE' : offLive ? '◐ BROWSING' : '◐ FOLLOWING'}
+            </span>
+          )}
           <span className="stage__clock">{clock}</span>
         </header>
 
@@ -124,28 +153,50 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
         {cur ? (
           <div ref={currentRef} className="stage__now" aria-live="polite">
             <div className="stage__beat"><span className="stage__dot-wrap"><i ref={beatRef} /></span>NOW · {String(cur.number).padStart(2, '0')}</div>
-            <h1>{cur.title}</h1>
-            <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
-            <div className="stage__grid">
-              <div className="stage__card stage__card--wide">
-                <span className="stage__avatar" style={{ background: cur.singer.color }}>{cur.singer.initial}</span>
-                <div><span className="stage__label">SINGER</span><b className="stage__big">{cur.singer.name}</b></div>
-              </div>
-              <div className="stage__card">
-                <span className="stage__label">KEY</span>
-                <b className="stage__big">{cur.key ? cur.key.replace(' major', '').replace(' minor', 'm') : '—'}</b>
-                <span className="stage__accent">{cur.camelot ? `Camelot ${cur.camelot}` : 'key not set'}</span>
-              </div>
-              <div className="stage__card stage__card--bpm">
-                <span className="stage__label">BPM</span>
-                <b className="stage__bpm">{cur.bpm ?? '—'}</b>
-                <span>{cur.duration}</span>
-              </div>
-              {cur.notes && <div className="stage__card stage__card--wide stage__notes">{cur.notes}</div>}
+            <div className="stage__titlerow">
+              <h1>{cur.title}</h1>
+              {cur.chordSheet && (
+                <button type="button" className="stage__chordtoggle" onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
+                  {showChords ? 'Hide chords' : 'Chords'}
+                </button>
+              )}
             </div>
+            <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
+            {showChords && cur.chordSheet ? (
+              <pre className="stage__chords" onPointerDown={(e) => e.stopPropagation()}>{cur.chordSheet}</pre>
+            ) : (
+              <div className="stage__grid">
+                <div className="stage__card stage__card--wide">
+                  <span className="stage__avatar" style={{ background: cur.singer.color }}>{cur.singer.initial}</span>
+                  <div><span className="stage__label">SINGER</span><b className="stage__big">{cur.singer.name}</b></div>
+                </div>
+                <div className="stage__card">
+                  <span className="stage__label">KEY</span>
+                  <b className="stage__big">{cur.key ? cur.key.replace(' major', '').replace(' minor', 'm') : '—'}</b>
+                  <span className="stage__accent">{cur.camelot ? `Camelot ${cur.camelot}` : 'key not set'}</span>
+                </div>
+                <div className="stage__card stage__card--bpm">
+                  <span className="stage__label">BPM</span>
+                  <b className="stage__bpm">{cur.bpm ?? '—'}</b>
+                  <span>{cur.duration}</span>
+                </div>
+                {cur.notes && <div className="stage__card stage__card--wide stage__notes">{cur.notes}</div>}
+              </div>
+            )}
             {cur.youtubeId && (
-              <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer"
-                onPointerDown={(e) => e.stopPropagation()}>▶ Listen on YouTube</a>
+              showVideo ? (
+                <div onPointerDown={(e) => e.stopPropagation()}>
+                  <SongPlayer youtubeId={cur.youtubeId} title={cur.title} artist={cur.artist} />
+                </div>
+              ) : (
+                <div className="stage__ytrow">
+                  <button type="button" className="stage__yt stage__yt--play" onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setShowVideo(true)}>▶ Play here</button>
+                  <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer"
+                    onPointerDown={(e) => e.stopPropagation()}>Open in YouTube</a>
+                </div>
+              )
             )}
           </div>
         ) : (
@@ -153,6 +204,12 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
         )}
 
         <footer className="stage__foot">
+          {offLive && (
+            <button className="stage__backlive" onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => { direction.current = liveIndex > index ? 1 : -1; setIndex(liveIndex) }}>
+              ↻ Back to live · {list[liveIndex]?.title}
+            </button>
+          )}
           {next ? (
             <button className="stage__next" onClick={() => go(1)} onPointerDown={(e) => e.stopPropagation()}>
               <div>
@@ -167,7 +224,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           ) : null}
           <div className="stage__nav">
             <button onClick={() => go(-1)} disabled={index === 0} onPointerDown={(e) => e.stopPropagation()}>← PREV</button>
-            <span>SWIPE LEFT TO ADVANCE</span>
+            <span>{synced && !canControl ? 'SWIPE TO BROWSE · SYNCS WHEN THE SONG CHANGES' : 'SWIPE LEFT TO ADVANCE'}</span>
           </div>
         </footer>
       </div>

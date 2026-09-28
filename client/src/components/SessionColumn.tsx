@@ -7,6 +7,7 @@ import { singerBadge } from '../lib/singers'
 import type { Member, Session, Song } from '../lib/types'
 import { useStore } from '../state/store'
 import { BpmSparkline } from './BpmSparkline'
+import { SongPlayer } from './SongPlayer'
 import { SongRow } from './SongRow'
 
 const ARRANGE: [ArrangeMode, string, string][] = [
@@ -23,13 +24,15 @@ interface Props {
   /** Seconds into the show this session starts, for the rail clock. */
   startSec: number
   selectedId: string | null
+  playingId: string | null
+  onPlay: (itemId: string) => void
   onTap: (itemId: string) => void
   onAddSong: () => void
   onEditItem: (itemId: string) => void
   notify: (message: string) => void
 }
 
-export function SessionColumn({ session, index, songs, members, startSec, selectedId, onTap, onAddSong, onEditItem, notify }: Props) {
+export function SessionColumn({ session, index, songs, members, startSec, selectedId, playingId, onPlay, onTap, onAddSong, onEditItem, notify }: Props) {
   const { dispatch } = useStore()
   const { setNodeRef, isOver } = useDroppable({ id: session.id })
   const [arrangeOpen, setArrangeOpen] = useState(false)
@@ -141,6 +144,8 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                     position={i + 1}
                     members={members}
                     selected={selectedId === item.id}
+                    playing={playingId === item.id}
+                    onPlay={() => onPlay(item.id)}
                     onTap={() => onTap(item.id)}
                     onEdit={() => onEditItem(item.id)}
                     onSinger={(singerId) => {
@@ -148,6 +153,11 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                       notify(singerId ? `${singerBadge(members, singerId).name} now sings “${song.title}”` : `“${song.title}” has no singer`)
                     }}
                   />
+                  {playingId === item.id && song.youtubeId && (
+                    <li className="songs__player">
+                      <SongPlayer youtubeId={song.youtubeId} title={song.title} artist={song.artist} />
+                    </li>
+                  )}
                 </Fragment>
               )
             })}

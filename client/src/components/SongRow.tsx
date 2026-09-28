@@ -5,7 +5,7 @@ import { camelot, formatKey, transposeKey } from '../lib/music'
 import { formatDuration } from '../lib/setlist'
 import { singerBadge } from '../lib/singers'
 import type { Member, SetlistItem, Song } from '../lib/types'
-import { thumbUrl, watchUrl } from '../lib/youtube'
+import { thumbUrl } from '../lib/youtube'
 
 interface Props {
   item: SetlistItem
@@ -13,6 +13,8 @@ interface Props {
   position: number
   members: Member[]
   selected: boolean
+  playing: boolean
+  onPlay: () => void
   onTap: () => void
   onEdit: () => void
   onSinger: (singerId: string | null) => void
@@ -20,7 +22,7 @@ interface Props {
 
 const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
 
-export function SongRow({ item, song, position, members, selected, onTap, onEdit, onSinger }: Props) {
+export function SongRow({ item, song, position, members, selected, playing, onPlay, onTap, onEdit, onSinger }: Props) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -105,8 +107,9 @@ export function SongRow({ item, song, position, members, selected, onTap, onEdit
         <span className="song__dur">{formatDuration(song.durationSec)}</span>
         <div className="song__actions">
           {song.youtubeId ? (
-            <a className="icon-btn icon-btn--dark" href={watchUrl(song.youtubeId)} target="_blank" rel="noreferrer"
-              title="Open on YouTube" aria-label={`Play ${song.title} on YouTube`} onClick={stop}>▶</a>
+            <button type="button" className={`icon-btn${playing ? ' icon-btn--dark' : ''}`} aria-pressed={playing}
+              title={playing ? 'Stop' : 'Play here'} aria-label={`${playing ? 'Stop' : 'Play'} ${song.title}`}
+              onClick={(e) => { stop(e); onPlay() }}>{playing ? '■' : '▶'}</button>
           ) : (
             <a className="icon-btn" title="Search YouTube" aria-label={`Search ${song.title} on YouTube`} target="_blank" rel="noreferrer"
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`} onClick={stop}>▶</a>
