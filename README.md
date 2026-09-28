@@ -44,12 +44,14 @@ npm run dev:client                   # app on http://localhost:5173
 
 1. Create a project and run `supabase/schema.sql` in the SQL editor.
 2. `cp client/.env.example client/.env` and fill `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` (the publishable key).
-   Leave them empty to run local-only.
+   These are required — Setsmith has no local/offline mode; all band data lives in Supabase.
 3. Under Authentication → URL configuration add your site URL (and `http://localhost:5173` for development).
    Email sign-up needs confirmation by default; turn that off under Authentication → Providers → Email for a quick start.
 
-The manager owns the band. Editors change the setlists, viewers see them. Saves are compared by revision, so if two
-people save at once the second one reloads the first one's version instead of overwriting it.
+Only the manager and editors need an account. The manager owns the band and can invite editors (change the
+setlist) or viewers (see it) by email invite, or share a read-only public link that anyone — no account, no
+sign-in — can open to follow the live setlist and current song during a show. Saves are compared by revision,
+so if two people save at once the second one reloads the first one's version instead of overwriting it.
 
 `npm test` runs the client (Vitest) and server (node:test) tests.
 

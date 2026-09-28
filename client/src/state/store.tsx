@@ -7,23 +7,11 @@ import { supabase } from '../lib/supabase'
 import type { BandState, Role } from '../lib/types'
 import { historyReducer, signature, type Action, type HistoryState } from './reducer'
 
-const STORAGE_KEY = 'setsmith:v1'
-const LOCAL_KEY = 'setsmith:local'
 const BAND_KEY = 'setsmith:band'
 const INVITE_KEY = 'setsmith:invite'
 const SAVE_DELAY_MS = 700
 
 const emptyState = (): BandState => ({ bandName: 'My band', members: [], songs: {}, shows: [], activeShowId: null })
-
-function load(): BandState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as BandState
-  } catch {
-    // Storage blocked or corrupt: fall back to a blank band.
-  }
-  return emptyState()
-}
 
 const lsGet = (key: string) => {
   try { return localStorage.getItem(key) } catch { return null }
@@ -42,8 +30,8 @@ const lsSet = (key: string, value: string | null) => {
 export interface BandInfo { id: string; name: string; role: Role }
 export interface AccessRow { userId: string; role: Role; displayName: string }
 export interface NowPlaying { showId: string; itemId: string }
-export type SyncStatus = 'local' | 'saving' | 'saved' | 'error'
-export type Gate = 'app' | 'loading' | 'auth' | 'onboard'
+export type SyncStatus = 'saving' | 'saved' | 'error'
+export type Gate = 'app' | 'loading' | 'auth' | 'onboard' | 'unconfigured'
 
 export interface Cloud {
   configured: boolean
@@ -60,8 +48,6 @@ export interface Cloud {
   nowPlaying: NowPlaying | null
   setNowPlaying: (showId: string, itemId: string) => void
   dismissNotice: () => void
-  goLocal: () => void
-  goCloud: () => void
   signOut: () => Promise<void>
   createBand: (name: string) => Promise<string | null>
   joinWithCode: (code: string) => Promise<string | null>
@@ -90,15 +76,14 @@ function readInviteFromUrl(): string | null {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [history, rawDispatch] = useReducer(historyReducer, undefined, (): HistoryState => ({ present: load(), past: [] }))
+  const [history, rawDispatch] = useReducer(historyReducer, undefined, (): HistoryState => ({ present: emptyState(), past: [] }))
   const [session, setSession] = useState<Session | null>(null)
   const [authReady, setAuthReady] = useState(!supabase)
-  const [localMode, setLocalMode] = useState(() => lsGet(LOCAL_KEY) === '1')
   const [bands, setBands] = useState<BandInfo[] | null>(null)
   const [bandId, setBandId] = useState<string | null>(() => lsGet(BAND_KEY))
   const [dataReady, setDataReady] = useState(false)
   const [access, setAccess] = useState<AccessRow[]>([])
-  const [status, setStatus] = useState<SyncStatus>('local')
+  const [status, setStatus] = useState<SyncStatus>('saved')
   const [notice, setNotice] = useState<string | null>(null)
   const [nowPlaying, setNowPlayingState] = useState<NowPlaying | null>(null)
 
@@ -113,16 +98,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const band = useMemo(() => bands?.find((b) => b.id === bandId) ?? null, [bands, bandId])
   const role = band?.role ?? null
   const readOnly = role === 'viewer'
-  const cloudIntent = !!supabase && !!session && !localMode
-  const cloudActive = cloudIntent && !!band && dataReady
+  const cloudActive = !!supabase && !!session && !!band && dataReady
 
   useEffect(() => {
     const pending = readInviteFromUrl()
-    if (pending) {
-      lsSet(INVITE_KEY, pending)
-      lsSet(LOCAL_KEY, null)
-      setLocalMode(false)
-    }
+    if (pending) lsSet(INVITE_KEY, pending)
   }, [])
 
   useEffect(() => {
@@ -221,7 +201,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Load the chosen band's document and keep it live.
   const bandRole = band?.id
   useEffect(() => {
-    if (!supabase || !userId || localMode || !bandRole) {
+    if (!supabase || !userId || !bandRole) {
       setDataReady(false)
       setNowPlayingState(null)
       return
@@ -260,7 +240,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cancelled = true
       client.removeChannel(channel)
     }
-  }, [userId, localMode, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands, fetchNowPlaying])
+  }, [userId, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands, fetchNowPlaying])
 
   const flush = useCallback(async () => {
     if (!supabase || !bandRole || saving.current) return
@@ -292,24 +272,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [bandRole, fetchBandData])
 
   useEffect(() => {
-    if (!cloudIntent) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(history.present))
-      } catch {
-        // Nothing to do: the app keeps working in memory.
-      }
-      return
-    }
     if (!cloudActive || readOnly || signature(history.present) === syncedSig.current) return
     setStatus('saving')
     clearTimeout(timer.current)
     timer.current = setTimeout(flush, SAVE_DELAY_MS)
     return () => clearTimeout(timer.current)
-  }, [history.present, cloudIntent, cloudActive, readOnly, flush])
-
-  useEffect(() => {
-    if (!cloudActive) setStatus('local')
-  }, [cloudActive])
+  }, [history.present, cloudActive, readOnly, flush])
 
   const dispatch = useCallback<Dispatch<Action>>((action) => {
     if (readOnly && !ALWAYS_ALLOWED.has(action.type)) return
@@ -318,11 +286,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!supabase) return
-    const local = load()
     await supabase.auth.signOut()
     setBandId(null)
     lsSet(BAND_KEY, null)
-    rawDispatch({ type: 'replace', state: local })
+    rawDispatch({ type: 'replace', state: emptyState() })
   }, [])
 
   const createBand = useCallback(async (name: string) => {
@@ -330,15 +297,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const clean = name.trim()
     if (!clean) return 'Give the band a name.'
     const fresh: BandState = { bandName: clean, members: [], songs: {}, shows: [], activeShowId: null }
-    const hasLocalWork = lsGet(STORAGE_KEY) !== null
-    const seed = cloudActive || !hasLocalWork ? fresh : { ...latest.current, bandName: clean }
     const display = session.user.email?.split('@')[0] ?? ''
-    const { data, error } = await supabase.rpc('create_band', { p_name: clean, p_data: seed, p_display: display })
+    const { data, error } = await supabase.rpc('create_band', { p_name: clean, p_data: fresh, p_display: display })
     if (error) return error.message
     await refreshBands()
     setBandId(data as string)
     return null
-  }, [session, cloudActive, refreshBands])
+  }, [session, refreshBands])
 
   const joinWithCode = useCallback(async (raw: string) => {
     if (!supabase) return 'Not configured.'
@@ -359,19 +324,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [bandRole, readOnly])
 
-  const goLocal = useCallback(() => {
-    lsSet(LOCAL_KEY, '1')
-    setLocalMode(true)
-    rawDispatch({ type: 'replace', state: load() })
-  }, [])
-
-  const goCloud = useCallback(() => {
-    lsSet(LOCAL_KEY, null)
-    setLocalMode(false)
-  }, [])
-
-  let gate: Gate = 'app'
-  if (supabase && !localMode) {
+  let gate: Gate = 'unconfigured'
+  if (supabase) {
+    gate = 'app'
     if (!authReady) gate = 'loading'
     else if (!session) gate = 'auth'
     else if (bands === null) gate = 'loading'
@@ -381,7 +336,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const cloud: Cloud = {
     configured: !!supabase, gate, userId, email: session?.user.email ?? null, bands: bands ?? [], band, role, readOnly,
-    access, status, notice, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), goLocal, goCloud, signOut, createBand,
+    access, status, notice, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), signOut, createBand,
     joinWithCode, switchBand: setBandId, refreshAccess,
   }
 

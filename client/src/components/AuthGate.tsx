@@ -7,7 +7,6 @@ type Mode = 'signin' | 'signup' | 'magic'
 const TITLES: Record<Mode, string> = { signin: 'Sign in', signup: 'Create account', magic: 'Email me a link' }
 
 export function AuthScreen() {
-  const { cloud } = useStore()
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -64,9 +63,6 @@ export function AuthScreen() {
         )}
         {message && <p className={'gate__msg' + (message.ok ? ' is-ok' : '')} role="status">{message.text}</p>}
         <button className="pill pill--accent pill--lg" type="submit" disabled={busy}>{busy ? 'Working…' : TITLES[mode]}</button>
-        <button className="gate__skip" type="button" onClick={cloud.goLocal}>
-          Or skip sign-in and work solo (no sync, no sharing — data stays only on this device)
-        </button>
       </form>
     </div>
   )
@@ -94,7 +90,7 @@ export function OnboardScreen() {
         <h1>Set up your band</h1>
         <form className="gate__section" onSubmit={(e) => { e.preventDefault(); run(() => cloud.createBand(name)) }}>
           <h2>Start a band</h2>
-          <p className="muted">You become the manager. Your current setlists and songs on this device are uploaded as the starting point.</p>
+          <p className="muted">You become the manager, with a blank setlist to start filling in.</p>
           <label className="gate__field">Band name
             <input id="onboard-band" value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
@@ -109,7 +105,6 @@ export function OnboardScreen() {
           <button className="pill" type="submit" disabled={busy}>Join</button>
         </form>
         {error && <p className="gate__msg" role="alert">{error}</p>}
-        <button className="gate__skip" onClick={cloud.goLocal}>Use locally for now</button>
         <button className="gate__skip" onClick={cloud.signOut}>Sign out</button>
       </div>
     </div>
@@ -118,4 +113,19 @@ export function OnboardScreen() {
 
 export function LoadingScreen() {
   return <div className="gate"><p className="muted" role="status">Loading your band…</p></div>
+}
+
+export function UnconfiguredScreen() {
+  return (
+    <div className="gate">
+      <div className="gate__card">
+        <span className="eyebrow">Setsmith</span>
+        <h1>Cloud not set up</h1>
+        <p className="muted">
+          This deployment is missing its Supabase configuration (VITE_SUPABASE_URL / VITE_SUPABASE_KEY),
+          so there's nowhere to sign in to. Ask whoever manages this deployment to set it up.
+        </p>
+      </div>
+    </div>
+  )
 }

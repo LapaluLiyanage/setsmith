@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AuthScreen, LoadingScreen, OnboardScreen } from './components/AuthGate'
+import { AuthScreen, LoadingScreen, OnboardScreen, UnconfiguredScreen } from './components/AuthGate'
 import { BandPanel } from './components/BandPanel'
 import { ExportPanel } from './components/ExportPanel'
 import { LibraryView } from './components/LibraryView'
@@ -57,6 +57,7 @@ export default function App() {
     return () => clearTimeout(t)
   }, [cloud.notice, cloud.dismissNotice])
 
+  if (cloud.gate === 'unconfigured') return <UnconfiguredScreen />
   if (cloud.gate === 'auth') return <AuthScreen />
   if (cloud.gate === 'onboard') return <OnboardScreen />
   if (cloud.gate === 'loading') return <LoadingScreen />

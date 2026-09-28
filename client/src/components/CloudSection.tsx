@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Role, Show } from '../lib/types'
 import { useStore } from '../state/store'
 
-const STATUS_TEXT = { local: 'Local only', saving: 'Saving…', saved: 'All changes saved', error: 'Save problem' } as const
+const STATUS_TEXT = { saving: 'Saving…', saved: 'All changes saved', error: 'Save problem' } as const
 
 const link = (param: string, value: string) => `${window.location.origin}${window.location.pathname}?${param}=${value}`
 
@@ -26,17 +26,7 @@ export function CloudSection({ show }: { show: Show | null }) {
     return () => { cancelled = true }
   }, [bandId, showId, isManager])
 
-  if (!cloud.configured) return null
-
-  if (cloud.gate !== 'app' || !cloud.band) {
-    return (
-      <section className="cloud">
-        <h3>Sync &amp; access</h3>
-        <p className="muted">This device is working offline. Sign in to sync with your band and give members access.</p>
-        <button className="pill pill--accent" onClick={cloud.goCloud}>Sign in / sync</button>
-      </section>
-    )
-  }
+  if (!cloud.configured || cloud.gate !== 'app' || !cloud.band) return null
 
   const band = cloud.band
 
@@ -155,7 +145,6 @@ export function CloudSection({ show }: { show: Show | null }) {
 
       {msg && <p className="status" role="status">{msg}</p>}
       <div className="member">
-        <button className="pill" onClick={cloud.goLocal}>Work offline</button>
         <button className="pill" onClick={cloud.signOut}>Sign out</button>
       </div>
     </section>
