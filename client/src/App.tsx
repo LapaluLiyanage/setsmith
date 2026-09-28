@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AuthScreen, LoadingScreen, OnboardScreen } from './components/AuthGate'
 import { BandPanel } from './components/BandPanel'
 import { ExportPanel } from './components/ExportPanel'
 import { LibraryView } from './components/LibraryView'
@@ -20,7 +21,7 @@ function Mark() {
 }
 
 export default function App() {
-  const { state, dispatch } = useStore()
+  const { state, dispatch, cloud } = useStore()
   const [theme, toggleTheme] = useTheme()
   const [bandOpen, setBandOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -50,6 +51,16 @@ export default function App() {
     })
   }
 
+  useEffect(() => {
+    if (!cloud.notice) return
+    const t = setTimeout(cloud.dismissNotice, 5000)
+    return () => clearTimeout(t)
+  }, [cloud.notice, cloud.dismissNotice])
+
+  if (cloud.gate === 'auth') return <AuthScreen />
+  if (cloud.gate === 'onboard') return <OnboardScreen />
+  if (cloud.gate === 'loading') return <LoadingScreen />
+
   return (
     <div className="app">
       <div className="frame">
@@ -58,6 +69,7 @@ export default function App() {
             <Mark />
             <span className="brand__name">Setsmith</span>
             <span className="brand__band">{state.bandName.toUpperCase()}</span>
+            {cloud.band && <span className={'sync-dot sync-dot--' + cloud.status} title={cloud.status} aria-label={'Sync: ' + cloud.status} />}
           </div>
           <div className="topbar__spacer" />
           <nav className="nav" aria-label="Main">
@@ -78,6 +90,8 @@ export default function App() {
           <button className="pill pill--dark" onClick={addShow}>+ New show</button>
         </header>
 
+        {cloud.readOnly && <p className="viewer-banner" role="status">You have view-only access to this band. Ask the manager for editor access to make changes.</p>}
+
         {view === 'library' ? (
           <LibraryView show={show} />
         ) : show ? (
@@ -91,7 +105,8 @@ export default function App() {
         )}
       </div>
 
-      {bandOpen && <BandPanel onClose={() => setBandOpen(false)} />}
+      {cloud.notice && <div className="toast" role="status" onClick={cloud.dismissNotice}>{cloud.notice}</div>}
+      {bandOpen && <BandPanel show={show} onClose={() => setBandOpen(false)} />}
       {exportOpen && show && <ExportPanel show={show} onClose={() => setExportOpen(false)} />}
       {stageOpen && show && <StageView show={show} onClose={() => setStageOpen(false)} />}
     </div>

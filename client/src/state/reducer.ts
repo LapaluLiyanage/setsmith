@@ -21,6 +21,7 @@ export type Action =
   | { type: 'updateMember'; memberId: string; patch: Partial<Omit<Member, 'id'>> }
   | { type: 'removeMember'; memberId: string }
   | { type: 'undo' }
+  | { type: 'replace'; state: BandState }
 
 /** Actions that only change what's on screen, not the band's data, so they skip undo history. */
 const NOT_UNDOABLE = new Set<Action['type']>(['selectShow', 'undo'])
@@ -48,6 +49,8 @@ function mapItems(state: BandState, fn: (items: SetlistItem[]) => SetlistItem[])
 
 export function bandReducer(state: BandState, action: Action): BandState {
   switch (action.type) {
+    case 'replace':
+      return action.state
     case 'selectShow':
       return { ...state, activeShowId: action.showId }
     case 'addShow':
@@ -119,6 +122,7 @@ export function historyReducer(history: HistoryState, action: Action): HistorySt
       : previous
     return { present, past: history.past.slice(0, -1) }
   }
+  if (action.type === 'replace') return { present: action.state, past: [] }
   const next = bandReducer(history.present, action)
   if (next === history.present) return history
   if (NOT_UNDOABLE.has(action.type)) return { ...history, present: next }

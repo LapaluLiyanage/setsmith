@@ -1,126 +1,189 @@
--- Setsmith schema (Supabase / Postgres). Apply in the Supabase SQL editor.
--- Mirrors client/src/lib/types.ts. Not wired into the app yet: the client saves to
--- localStorage until the Supabase milestone (see README roadmap).
+-- Setsmith schema (Supabase / Postgres). Already applied to the hosted project as a migration;
+-- keep this file in sync so a fresh project can be set up from it in the SQL editor.
+--
+-- Model: each band has one JSON document (client BandState: songs, shows, singers) plus an access
+-- list with roles. Writes go through save_band_data(), which compares a revision number so two
+-- editors can't silently overwrite each other.
 
 create extension if not exists pgcrypto;
+
+create type band_role as enum ('manager', 'editor', 'viewer');
 
 create table bands (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  created_by uuid not null references auth.users(id),
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );
 
-create type band_role as enum ('manager', 'editor', 'viewer');
-
--- A person in the band. user_id is null until they accept an invite and sign in,
--- so the manager can list singers before everyone has an account.
-create table members (
-  id uuid primary key default gen_random_uuid(),
+create table band_access (
   band_id uuid not null references bands(id) on delete cascade,
-  user_id uuid references auth.users(id),
-  name text not null,
-  email text,
-  role band_role not null default 'viewer',
-  is_singer boolean not null default false,
-  key_low text,   -- comfortable range for transpose suggestions, e.g. 'A2'
-  key_high text,
-  unique (band_id, user_id)
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role band_role not null,
+  display_name text not null default '',
+  joined_at timestamptz not null default now(),
+  primary key (band_id, user_id)
+);
+create index on band_access (user_id);
+
+create table band_data (
+  band_id uuid primary key references bands(id) on delete cascade,
+  data jsonb not null,
+  rev integer not null default 1,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references auth.users(id)
 );
 
-create type bpm_source as enum ('lookup', 'analysis', 'tap', 'manual');
-
--- The band's song library: BPM/key are looked up once and reused across shows.
-create table songs (
-  id uuid primary key default gen_random_uuid(),
+create table invites (
+  code text primary key default encode(gen_random_bytes(9), 'hex'),
   band_id uuid not null references bands(id) on delete cascade,
-  title text not null,
-  artist text not null default '',
-  youtube_id text check (youtube_id ~ '^[A-Za-z0-9_-]{11}$'),
-  duration_sec integer not null default 0,
-  bpm smallint check (bpm between 30 and 300),
-  key_tonic smallint check (key_tonic between 0 and 11),
-  key_mode text check (key_mode in ('major', 'minor')),
-  bpm_source bpm_source,
-  language text,
-  created_at timestamptz not null default now()
+  role band_role not null default 'viewer' check (role <> 'manager'),
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '14 days',
+  used_by uuid references auth.users(id),
+  used_at timestamptz
 );
+create index on invites (band_id);
 
-create table shows (
-  id uuid primary key default gen_random_uuid(),
+-- Read-only public links, one per show. Served through get_shared(), never by table access.
+create table shares (
+  token text primary key default encode(gen_random_bytes(12), 'hex'),
   band_id uuid not null references bands(id) on delete cascade,
-  name text not null,
-  show_date date,
-  venue text not null default '',
-  slot_minutes integer not null default 120,
-  -- Read-only public link; null means sharing is off.
-  share_token text unique,
-  created_at timestamptz not null default now()
+  show_id text not null,
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (band_id, show_id)
 );
 
-create table sessions (
-  id uuid primary key default gen_random_uuid(),
-  show_id uuid not null references shows(id) on delete cascade,
-  name text not null,
-  position integer not null,
-  target_minutes integer not null default 45
-);
-
-create table setlist_items (
-  id uuid primary key default gen_random_uuid(),
-  session_id uuid not null references sessions(id) on delete cascade,
-  song_id uuid not null references songs(id) on delete restrict,
-  singer_id uuid references members(id) on delete set null,
-  position integer not null,
-  transpose smallint not null default 0 check (transpose between -11 and 11),
-  notes text not null default ''
-);
-
-create index on members (band_id);
-create index on songs (band_id);
-create index on shows (band_id);
-create index on sessions (show_id, position);
-create index on setlist_items (session_id, position);
-
--- Row-level security: members can read their band; managers/editors can write.
 alter table bands enable row level security;
-alter table members enable row level security;
-alter table songs enable row level security;
-alter table shows enable row level security;
-alter table sessions enable row level security;
-alter table setlist_items enable row level security;
+alter table band_access enable row level security;
+alter table band_data enable row level security;
+alter table invites enable row level security;
+alter table shares enable row level security;
 
-create function band_role_of(b uuid) returns band_role
+create function my_role(b uuid) returns band_role
 language sql stable security definer set search_path = public as $$
-  select role from members where band_id = b and user_id = auth.uid()
+  select role from band_access where band_id = b and user_id = (select auth.uid())
 $$;
 
-create policy "members read band" on bands for select using (band_role_of(id) is not null);
-create policy "creator makes band" on bands for insert with check (created_by = auth.uid());
+create policy "members read band" on bands for select to authenticated
+  using (my_role(id) is not null);
 
-create policy "read members" on members for select using (band_role_of(band_id) is not null);
-create policy "manager edits members" on members for all
-  using (band_role_of(band_id) = 'manager') with check (band_role_of(band_id) = 'manager');
+create policy "members read access list" on band_access for select to authenticated
+  using (my_role(band_id) is not null);
+create policy "manager changes roles" on band_access for update to authenticated
+  using (my_role(band_id) = 'manager' and user_id <> (select auth.uid()))
+  with check (my_role(band_id) = 'manager' and role <> 'manager');
+create policy "manager removes members" on band_access for delete to authenticated
+  using (my_role(band_id) = 'manager' and user_id <> (select auth.uid()));
 
-create policy "read songs" on songs for select using (band_role_of(band_id) is not null);
-create policy "edit songs" on songs for all
-  using (band_role_of(band_id) in ('manager', 'editor')) with check (band_role_of(band_id) in ('manager', 'editor'));
+create policy "members read band data" on band_data for select to authenticated
+  using (my_role(band_id) is not null);
 
-create policy "read shows" on shows for select using (band_role_of(band_id) is not null);
-create policy "manager edits shows" on shows for all
-  using (band_role_of(band_id) = 'manager') with check (band_role_of(band_id) = 'manager');
+create policy "manager reads invites" on invites for select to authenticated
+  using (my_role(band_id) = 'manager');
+create policy "manager makes invites" on invites for insert to authenticated
+  with check (my_role(band_id) = 'manager' and created_by = (select auth.uid()));
+create policy "manager deletes invites" on invites for delete to authenticated
+  using (my_role(band_id) = 'manager');
 
-create policy "read sessions" on sessions for select
-  using (band_role_of((select band_id from shows where id = show_id)) is not null);
-create policy "edit sessions" on sessions for all
-  using (band_role_of((select band_id from shows where id = show_id)) in ('manager', 'editor'))
-  with check (band_role_of((select band_id from shows where id = show_id)) in ('manager', 'editor'));
+create policy "manager reads shares" on shares for select to authenticated
+  using (my_role(band_id) = 'manager');
+create policy "manager makes shares" on shares for insert to authenticated
+  with check (my_role(band_id) = 'manager' and created_by = (select auth.uid()));
+create policy "manager deletes shares" on shares for delete to authenticated
+  using (my_role(band_id) = 'manager');
 
-create policy "read items" on setlist_items for select
-  using (band_role_of((select sh.band_id from sessions se join shows sh on sh.id = se.show_id where se.id = session_id)) is not null);
-create policy "edit items" on setlist_items for all
-  using (band_role_of((select sh.band_id from sessions se join shows sh on sh.id = se.show_id where se.id = session_id)) in ('manager', 'editor'))
-  with check (band_role_of((select sh.band_id from sessions se join shows sh on sh.id = se.show_id where se.id = session_id)) in ('manager', 'editor'));
+create function create_band(p_name text, p_data jsonb, p_display text default '') returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  new_id uuid;
+begin
+  if uid is null then raise exception 'not signed in'; end if;
+  insert into bands (name, created_by) values (p_name, uid) returning id into new_id;
+  insert into band_access (band_id, user_id, role, display_name) values (new_id, uid, 'manager', p_display);
+  insert into band_data (band_id, data, updated_by) values (new_id, p_data, uid);
+  return new_id;
+end $$;
 
--- Public share links are served by the API with the service role, looked up by share_token,
--- so no anonymous policy is needed here.
+-- Returns the new revision, or -1 when someone else saved first (caller should reload).
+create function save_band_data(p_band uuid, p_data jsonb, p_expected integer) returns integer
+language plpgsql security definer set search_path = public as $$
+declare
+  new_rev integer;
+begin
+  if my_role(p_band) is null or my_role(p_band) = 'viewer' then
+    raise exception 'not allowed';
+  end if;
+  update band_data
+     set data = p_data, rev = rev + 1, updated_at = now(), updated_by = auth.uid()
+   where band_id = p_band and rev = p_expected
+   returning rev into new_rev;
+  return coalesce(new_rev, -1);
+end $$;
+
+create function accept_invite(p_code text) returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  uid uuid := auth.uid();
+  inv invites%rowtype;
+begin
+  if uid is null then raise exception 'not signed in'; end if;
+  select * into inv from invites where code = p_code for update;
+  if not found or inv.used_by is not null or inv.expires_at < now() then
+    raise exception 'invite is invalid or expired';
+  end if;
+  insert into band_access (band_id, user_id, role)
+    values (inv.band_id, uid, inv.role)
+    on conflict (band_id, user_id) do nothing;
+  update invites set used_by = uid, used_at = now() where code = p_code;
+  return inv.band_id;
+end $$;
+
+create function set_display_name(p_band uuid, p_name text) returns void
+language sql security definer set search_path = public as $$
+  update band_access set display_name = left(p_name, 60)
+   where band_id = p_band and user_id = auth.uid()
+$$;
+
+-- Public, read-only view of one shared show: only the songs it uses, and singers by name.
+create function get_shared(p_token text) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  s shares%rowtype;
+  d jsonb;
+  b text;
+  shw jsonb;
+begin
+  select * into s from shares where token = p_token;
+  if not found then return null; end if;
+  select data into d from band_data where band_id = s.band_id;
+  select name into b from bands where id = s.band_id;
+  select x into shw from jsonb_array_elements(d -> 'shows') x where x ->> 'id' = s.show_id limit 1;
+  if shw is null then return null; end if;
+  return jsonb_build_object(
+    'bandName', b,
+    'show', shw,
+    'songs', (
+      select coalesce(jsonb_object_agg(k, d -> 'songs' -> k), '{}'::jsonb)
+      from (
+        select distinct i ->> 'songId' as k
+        from jsonb_array_elements(shw -> 'sessions') se, jsonb_array_elements(se -> 'items') i
+      ) used
+      where d -> 'songs' ? k
+    ),
+    'members', (
+      select coalesce(jsonb_agg(jsonb_build_object('id', m ->> 'id', 'name', m ->> 'name', 'isSinger', m -> 'isSinger')), '[]'::jsonb)
+      from jsonb_array_elements(d -> 'members') m
+    )
+  );
+end $$;
+
+revoke execute on all functions in schema public from public, anon;
+grant execute on function my_role(uuid), create_band(text, jsonb, text), save_band_data(uuid, jsonb, integer),
+  accept_invite(text), set_display_name(uuid, text) to authenticated;
+grant execute on function get_shared(text) to anon, authenticated;
+
+alter publication supabase_realtime add table band_data, band_access;

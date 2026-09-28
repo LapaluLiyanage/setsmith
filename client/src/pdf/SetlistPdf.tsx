@@ -1,5 +1,16 @@
-import { Document, Image, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import { Document, Font, Image, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
+import sinhalaRegular from '@fontsource/noto-sans-sinhala/files/noto-sans-sinhala-sinhala-400-normal.woff?url'
+import sinhalaBold from '@fontsource/noto-sans-sinhala/files/noto-sans-sinhala-sinhala-700-normal.woff?url'
 import type { ExportData } from '../lib/exportData'
+
+// The built-in PDF fonts have no Sinhala glyphs, so any text containing Sinhala switches to Noto Sans Sinhala.
+Font.register({
+  family: 'NotoSinhala',
+  fonts: [{ src: sinhalaRegular, fontWeight: 400 }, { src: sinhalaBold, fontWeight: 700 }],
+})
+const SINHALA = /[඀-෿]/
+const sf = (text: string | undefined, bold = false) =>
+  text && SINHALA.test(text) ? { fontFamily: 'NotoSinhala', fontWeight: bold ? 700 : 400 } : {}
 
 // Printed on paper and read on phones, so: white page, dark ink, one amber accent.
 const INK = '#1d1f22'
@@ -59,8 +70,8 @@ export function SetlistPdf({ data, qrCodes }: Props) {
           <Text style={s.band}>{data.bandName.toUpperCase()}</Text>
         </View>
 
-        <Text style={s.title}>{data.showName}</Text>
-        <Text style={s.meta}>{[data.date, data.venue].filter(Boolean).join('  ·  ')}</Text>
+        <Text style={[s.title, sf(data.showName, true)]}>{data.showName}</Text>
+        <Text style={[s.meta, sf(data.venue)]}>{[data.date, data.venue].filter(Boolean).join('  ·  ')}</Text>
 
         <View style={s.stats}>
           <Stat label="SONGS" value={String(data.songCount)} />
@@ -72,7 +83,7 @@ export function SetlistPdf({ data, qrCodes }: Props) {
         {data.sessions.map((session, i) => (
           <View key={i} style={s.section}>
             <View style={s.sessionHead} wrap={false}>
-              <Text style={s.sessionName}>{session.name}</Text>
+              <Text style={[s.sessionName, sf(session.name, true)]}>{session.name}</Text>
               <Text style={[s.sessionTime, session.over ? s.over : {}]}>
                 {session.total} of {session.target}{session.over ? '  (over)' : ''}
               </Text>
@@ -91,11 +102,11 @@ export function SetlistPdf({ data, qrCodes }: Props) {
               <View key={r.number} style={s.row} wrap={false}>
                 <Text style={s.cNum}>{r.number}</Text>
                 <View style={s.cSong}>
-                  {r.url ? <Link src={r.url} style={s.songTitle}>{r.title}</Link> : <Text style={s.songTitle}>{r.title}</Text>}
-                  {r.artist ? <Text style={s.artist}>{r.artist}</Text> : null}
-                  {r.notes ? <Text style={s.notes}>{r.notes}</Text> : null}
+                  {r.url ? <Link src={r.url} style={[s.songTitle, sf(r.title, true)]}>{r.title}</Link> : <Text style={[s.songTitle, sf(r.title, true)]}>{r.title}</Text>}
+                  {r.artist ? <Text style={[s.artist, sf(r.artist)]}>{r.artist}</Text> : null}
+                  {r.notes ? <Text style={[s.notes, sf(r.notes)]}>{r.notes}</Text> : null}
                 </View>
-                <Text style={s.cSinger}>{r.singer || '–'}</Text>
+                <Text style={[s.cSinger, sf(r.singer)]}>{r.singer || '–'}</Text>
                 <Text style={s.cBpm}>{r.bpm || '–'}</Text>
                 <View style={s.cKey}>
                   <Text>{r.key || '–'}</Text>
@@ -117,7 +128,7 @@ export function SetlistPdf({ data, qrCodes }: Props) {
             <Text style={s.summaryTitle}>Songs per singer</Text>
             {data.singerCounts.map((c) => (
               <View key={c.name} style={s.summaryRow}>
-                <Text style={{ flex: 1 }}>{c.name}</Text>
+                <Text style={[{ flex: 1 }, sf(c.name)]}>{c.name}</Text>
                 <Text style={{ fontFamily: 'Courier-Bold' }}>{c.count}</Text>
               </View>
             ))}

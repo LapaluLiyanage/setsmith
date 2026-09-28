@@ -23,9 +23,11 @@ BPM and key → rearrange with drag-and-drop or quick swap → send the band a P
 - **PDF export**: a table per session (singer, BPM, key with Camelot code, transpose, notes, time),
   song titles link to YouTube, a QR code per song for printed copies, songs-per-singer summary.
   Download, share straight to WhatsApp on phones, open an email, or copy a text version.
-  Known gap: song titles typed in Sinhala script won't print yet (the PDF uses built-in Latin fonts).
+  Sinhala-script titles, artists and singer names print in Noto Sans Sinhala.
+- **Accounts and sharing** (Supabase): email/password or magic-link sign-in, one band document synced live between
+  devices, invite links that grant Editor or Viewer access, and a public read-only link per show.
+  Without an account the app keeps working from browser storage.
 
-Data is saved in the browser for now. Supabase (accounts, sharing, sync across the band) is the next milestone.
 
 ## Run it
 
@@ -37,6 +39,17 @@ cp server/.env.example server/.env   # add your keys (optional)
 npm run dev:server                   # API on http://localhost:4000
 npm run dev:client                   # app on http://localhost:5173
 ```
+
+### Supabase (accounts, sync, sharing)
+
+1. Create a project and run `supabase/schema.sql` in the SQL editor.
+2. `cp client/.env.example client/.env` and fill `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` (the publishable key).
+   Leave them empty to run local-only.
+3. Under Authentication → URL configuration add your site URL (and `http://localhost:5173` for development).
+   Email sign-up needs confirmation by default; turn that off under Authentication → Providers → Email for a quick start.
+
+The manager owns the band. Editors change the setlists, viewers see them. Saves are compared by revision, so if two
+people save at once the second one reloads the first one's version instead of overwriting it.
 
 `npm test` runs the client (Vitest) and server (node:test) tests.
 
@@ -55,7 +68,7 @@ BPM is never taken by downloading YouTube audio, which YouTube's terms don't all
 ```
 client/    React + Vite + TypeScript, dnd-kit, GSAP, Three.js (energy map, lazy-loaded)
   src/lib/     pure logic (setlist moves, Camelot keys, tap tempo, YouTube URLs) + tests
-  src/state/   reducer with undo, sample data, local save
+  src/state/   reducer with undo, sample data, local save + Supabase sync (store.tsx)
   src/components/
 server/    Express API that keeps keys off the browser and caches lookups
 supabase/  schema.sql with row-level security per band
@@ -64,8 +77,8 @@ supabase/  schema.sql with row-level security per band
 ## Roadmap
 
 1. ~~Setlist editor, drag and swap, BPM/key, tap tempo~~
-2. ~~PDF export and send~~ (next: Sinhala-script font in the PDF)
-3. Supabase accounts, band invites with roles, read-only share link
+2. ~~PDF export and send~~ (Sinhala font included)
+3. ~~Supabase accounts, band invites with roles, read-only share link~~
 4. ~~Song library view with filters~~ (search, singer, BPM range, Camelot key, language; add to any session)
 5. Singer key ranges and transpose suggestions
 6. ~~Stage view for phones~~ (big-type now/next, beat-pulse dot, swipe or arrow keys, keeps the screen on)

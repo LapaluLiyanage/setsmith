@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react'
-import type { Role } from '../lib/types'
+import type { Role, Show } from '../lib/types'
+import { CloudSection } from './CloudSection'
 import { useDrawerIn } from '../lib/motion'
 import { newId, useStore } from '../state/store'
 
@@ -9,7 +10,7 @@ const ROLE_HELP: Record<Role, string> = {
   viewer: 'Can see the setlist and open links',
 }
 
-export function BandPanel({ onClose }: { onClose: () => void }) {
+export function BandPanel({ onClose, show }: { onClose: () => void; show: Show | null }) {
   const { state, dispatch } = useStore()
   const drawerRef = useRef<HTMLElement>(null)
   const scrimRef = useRef<HTMLDivElement>(null)
@@ -33,8 +34,10 @@ export function BandPanel({ onClose }: { onClose: () => void }) {
           <button className="icon-btn icon-btn--lg" onClick={onClose} aria-label="Close">×</button>
         </header>
         <div className="drawer__body">
+          <CloudSection show={show} />
+          <h3>Band members &amp; singers</h3>
           <p className="muted">
-            Sign-in and email invites arrive with the Supabase step. For now, add members here so you can assign singers.
+            The people you can assign to songs. This is separate from who can sign in; use the access list above to invite them.
           </p>
           <ul className="members">
             {state.members.map((m) => (
