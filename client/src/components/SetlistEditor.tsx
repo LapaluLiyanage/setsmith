@@ -21,6 +21,7 @@ interface Props {
   theme: Theme
   onShare: () => void
   onExport: () => void
+  onStage: () => void
 }
 
 const TOAST_MS = 6000
@@ -31,7 +32,7 @@ function showDateLine(iso: string): string {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/,/g, '').toUpperCase()
 }
 
-export function SetlistEditor({ show, theme, onShare, onExport }: Props) {
+export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props) {
   const { state, dispatch, canUndo } = useStore()
   const members = state.members
 
@@ -311,6 +312,7 @@ export function SetlistEditor({ show, theme, onShare, onExport }: Props) {
         <nav className="dock" aria-label="Setlist actions">
           <span className="dock__time">{formatDuration(totalSec)} / {formatDuration(slotSec)}</span>
           <span className="dock__sep" />
+          <button className="dock__btn" disabled={!allItems.length} onClick={onStage}>Rehearse</button>
           <button className="dock__btn" disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)">Undo</button>
           <button className="dock__btn" disabled={!show.sessions.length}
             onClick={() => show.sessions[0] && setDrawer({ mode: 'add', sessionId: show.sessions[0].id })}>+ Add song</button>

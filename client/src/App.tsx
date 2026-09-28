@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { BandPanel } from './components/BandPanel'
 import { ExportPanel } from './components/ExportPanel'
 import { SetlistEditor } from './components/SetlistEditor'
+import { StageView } from './components/StageView'
 import { newId, useStore } from './state/store'
 import { useTheme } from './state/theme'
 
@@ -22,6 +23,7 @@ export default function App() {
   const [theme, toggleTheme] = useTheme()
   const [bandOpen, setBandOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [stageOpen, setStageOpen] = useState(false)
   const show = state.shows.find((s) => s.id === state.activeShowId) ?? null
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function App() {
           <div className="topbar__spacer" />
           <nav className="nav" aria-label="Main">
             <span className="nav__item nav__item--active" aria-current="page">Setlist</span>
-            <button className="nav__item" disabled title="Coming soon">Stage view <span className="nav__soon">SOON</span></button>
+            <button className="nav__item nav__item--keep" disabled={!show} onClick={() => setStageOpen(true)}>Stage view</button>
             <button className="nav__item" disabled title="Coming soon">Library <span className="nav__soon">SOON</span></button>
             <button className="nav__item nav__item--keep" onClick={() => setBandOpen(true)}>Band</button>
             <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
@@ -73,7 +75,7 @@ export default function App() {
         </header>
 
         {show ? (
-          <SetlistEditor key={show.id} show={show} theme={theme} onShare={() => setBandOpen(true)} onExport={() => setExportOpen(true)} />
+          <SetlistEditor key={show.id} show={show} theme={theme} onShare={() => setBandOpen(true)} onExport={() => setExportOpen(true)} onStage={() => setStageOpen(true)} />
         ) : (
           <div className="empty">
             <h1>No shows yet</h1>
@@ -85,6 +87,7 @@ export default function App() {
 
       {bandOpen && <BandPanel onClose={() => setBandOpen(false)} />}
       {exportOpen && show && <ExportPanel show={show} onClose={() => setExportOpen(false)} />}
+      {stageOpen && show && <StageView show={show} onClose={() => setStageOpen(false)} />}
     </div>
   )
 }

@@ -17,6 +17,8 @@ BPM and key → rearrange with drag-and-drop or quick swap → send the band a P
 - Quick swap: press ⇄ on one song, then ⇄ on another
 - Auto-arrange a session by BPM (build up, cool down, peak in the middle) with an energy sparkline
 - Undo (button or Ctrl+Z)
+- **Stage view** for the gig: current song in huge type with singer, key, BPM and notes, a dot pulsing on the beat,
+  next song below; swipe, tap or use arrow keys / a page-turner pedal; keeps the phone screen awake
 - Band members with roles (manager / editor / viewer)
 - **PDF export**: a table per session (singer, BPM, key with Camelot code, transpose, notes, time),
   song titles link to YouTube, a QR code per song for printed copies, songs-per-singer summary.
@@ -66,6 +68,6 @@ supabase/  schema.sql with row-level security per band
 3. Supabase accounts, band invites with roles, read-only share link
 4. Song library view with filters
 5. Singer key ranges and transpose suggestions
-6. Stage view for phones
+6. ~~Stage view for phones~~ (big-type now/next, beat-pulse dot, swipe or arrow keys, keeps the screen on)
 7. ~~Apply the Claude Design UI~~ (setlist editor, add-song, band and export panels; light/dark;
    GSAP card entrance, FLIP reorder, toasts; Three.js energy map)
