@@ -94,6 +94,9 @@ create policy "members read band data" on band_data for select to authenticated
 
 create policy "members read now playing" on now_playing for select to authenticated
   using (my_role(band_id) is not null);
+-- Anyone with a show's public share link follows the live "now playing" pointer, no account needed.
+create policy "public read now playing via share" on now_playing for select to anon
+  using (exists (select 1 from shares s where s.band_id = now_playing.band_id and s.show_id = now_playing.show_id));
 
 create policy "manager reads invites" on invites for select to authenticated
   using (my_role(band_id) = 'manager');
@@ -192,6 +195,7 @@ begin
   select x into shw from jsonb_array_elements(d -> 'shows') x where x ->> 'id' = s.show_id limit 1;
   if shw is null then return null; end if;
   return jsonb_build_object(
+    'bandId', s.band_id,
     'bandName', b,
     'show', shw,
     'songs', (

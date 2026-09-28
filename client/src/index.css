@@ -466,6 +466,7 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .gate__msg { margin: 0; font-size: 14px; color: #c0392b; }
 .gate__msg.is-ok { color: inherit; }
 .gate__skip { border: 0; background: transparent; color: var(--mu); text-decoration: underline; font-size: 13px; padding: 6px; }
+.gate__note { margin: 0; padding: 12px 14px; border-radius: 14px; background: var(--sf); font-size: 13px; line-height: 1.5; color: var(--mu); }
 .cloud { display: flex; flex-direction: column; gap: 10px; padding-bottom: 18px; margin-bottom: 14px; border-bottom: 1px solid var(--ln); }
 .cloud h3, .cloud h4, .drawer__body h3 { margin: 6px 0 0; }
 .cloud h4 { font: 500 11px var(--mono); letter-spacing: .1em; color: var(--mu); text-transform: uppercase; }
@@ -487,3 +488,9 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .shared__row .muted { font-size: 13px; }
 .shared__meta { font: 500 12px var(--mono); color: var(--mu); text-align: right; }
 .shared__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.shared__live { display: flex; flex-direction: column; gap: 10px; padding: 20px; border-radius: 22px; background: var(--ac); color: var(--ai); }
+.shared__live .eyebrow { color: var(--ai); opacity: .7; }
+.shared__live h2 { margin: 0; font-size: 28px; letter-spacing: -.01em; }
+.shared__live .muted { color: var(--ai); opacity: .75; }
+.shared__live .pill { background: var(--dk); color: var(--dki); border-color: var(--dk); }
+.shared__chords { margin: 0; padding: 14px; border-radius: 16px; background: var(--dk); color: var(--dki); white-space: pre; overflow: auto; font: 600 14px/1.6 var(--mono); }

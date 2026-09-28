@@ -146,7 +146,10 @@ export function CloudSection({ show }: { show: Show | null }) {
           ) : (
             <button className="pill" disabled={!show} onClick={createShare}>Create read-only link</button>
           )}
-          <p className="muted" style={{ fontSize: 13 }}>Anyone with the link can view this show’s setlist without an account. It refreshes automatically.</p>
+          <p className="muted" style={{ fontSize: 13 }}>
+            Anyone with the link sees this show’s setlist without an account — and if you use Stage view
+            here, their screen follows the current song live, no sign-in needed.
+          </p>
         </>
       )}
 

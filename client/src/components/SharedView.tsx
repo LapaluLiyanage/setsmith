@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { buildExport, formatShowDate, pdfFileName } from '../lib/exportData'
+import { buildStageList } from '../lib/stage'
 import { supabase } from '../lib/supabase'
 import type { Member, Show, Song } from '../lib/types'
+import { SongPlayer } from './SongPlayer'
 
 interface Shared {
+  bandId: string
   bandName: string
   show: Show
   songs: Record<string, Song>
   members: { id: string; name: string; isSinger: boolean }[]
 }
 
+interface NowPlaying { showId: string; itemId: string }
+
 const REFRESH_MS = 20_000
 
 export function SharedView({ token }: { token: string }) {
   const [shared, setShared] = useState<Shared | null | undefined>(undefined)
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null)
+  const [showChords, setShowChords] = useState(false)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -31,11 +38,39 @@ export function SharedView({ token }: { token: string }) {
     return () => { cancelled = true; clearInterval(id) }
   }, [token])
 
+  // No account needed: the public link also follows the live "now playing" pointer.
+  const bandId = shared?.bandId
+  useEffect(() => {
+    if (!supabase || !bandId) return
+    const client = supabase
+    client.from('now_playing').select('show_id, item_id').eq('band_id', bandId).maybeSingle()
+      .then(({ data }) => setNowPlaying(data ? { showId: data.show_id as string, itemId: data.item_id as string } : null))
+    const channel = client
+      .channel(`shared:${bandId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'now_playing', filter: `band_id=eq.${bandId}` }, (payload) => {
+        const row = payload.new as { show_id?: string; item_id?: string } | undefined
+        if (row?.show_id && row?.item_id) setNowPlaying({ showId: row.show_id, itemId: row.item_id })
+      })
+      .subscribe()
+    return () => { client.removeChannel(channel) }
+  }, [bandId])
+
+  const members: Member[] = useMemo(() => (shared?.members ?? []).map((m) => ({ ...m, role: 'viewer' })), [shared])
+
   const data = useMemo(() => {
     if (!shared) return null
-    const members: Member[] = shared.members.map((m) => ({ ...m, role: 'viewer' }))
     return buildExport(shared.show, shared.songs, members, shared.bandName)
-  }, [shared])
+  }, [shared, members])
+
+  const stageList = useMemo(
+    () => (shared ? buildStageList(shared.show, shared.songs, members) : []),
+    [shared, members],
+  )
+  const current = nowPlaying?.showId === shared?.show.id
+    ? stageList.find((s) => s.itemId === nowPlaying?.itemId)
+    : undefined
+
+  useEffect(() => { setShowChords(false) }, [current?.itemId])
 
   async function download() {
     if (!data) return
@@ -74,6 +109,23 @@ export function SharedView({ token }: { token: string }) {
         <h1>{data.showName}</h1>
         <p className="muted">{formatShowDate(data.date)}{data.venue ? ` · ${data.venue}` : ''} · {data.songCount} songs · {data.planned}</p>
       </header>
+      {current && (
+        <section className="shared__live">
+          <span className="eyebrow">● NOW PLAYING</span>
+          <h2>{current.title}</h2>
+          <p className="muted">{[current.artist, current.singer.name, current.key, current.bpm && `${current.bpm} bpm`].filter(Boolean).join(' · ')}</p>
+          <div className="shared__actions">
+            {current.chordSheet && (
+              <button type="button" className="pill" aria-pressed={showChords} onClick={() => setShowChords((v) => !v)}>
+                {showChords ? 'Hide chords' : 'Chords'}
+              </button>
+            )}
+          </div>
+          {showChords && current.chordSheet && <pre className="shared__chords">{current.chordSheet}</pre>}
+          {current.youtubeId && <SongPlayer youtubeId={current.youtubeId} title={current.title} artist={current.artist} />}
+        </section>
+      )}
+
       <div className="shared__actions">
         <button className="pill pill--accent" onClick={download} disabled={busy}>{busy ? 'Building PDF…' : 'Download PDF'}</button>
       </div>

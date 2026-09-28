@@ -42,6 +42,11 @@ export function AuthScreen() {
         <span className="eyebrow">Setsmith</span>
         <h1>{TITLES[mode]}</h1>
         <p className="muted">Sign in to keep your band’s setlists in sync across phones and laptops, and to share access.</p>
+        <p className="gate__note">
+          Only the person managing setlists needs an account. Other players don’t sign in at all —
+          the manager sends them a link (Band → Public link) that opens straight to the live setlist and
+          current song, no login required.
+        </p>
         <div className="gate__tabs" role="tablist">
           {(Object.keys(TITLES) as Mode[]).map((m) => (
             <button type="button" key={m} role="tab" aria-selected={mode === m} className={'lf__preset' + (mode === m ? ' is-on' : '')}
@@ -59,7 +64,9 @@ export function AuthScreen() {
         )}
         {message && <p className={'gate__msg' + (message.ok ? ' is-ok' : '')} role="status">{message.text}</p>}
         <button className="pill pill--accent pill--lg" type="submit" disabled={busy}>{busy ? 'Working…' : TITLES[mode]}</button>
-        <button className="gate__skip" type="button" onClick={cloud.goLocal}>Continue without an account (data stays on this device)</button>
+        <button className="gate__skip" type="button" onClick={cloud.goLocal}>
+          Or skip sign-in and work solo (no sync, no sharing — data stays only on this device)
+        </button>
       </form>
     </div>
   )
