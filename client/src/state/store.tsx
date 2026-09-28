@@ -6,7 +6,6 @@ import {
 import { supabase } from '../lib/supabase'
 import type { BandState, Role } from '../lib/types'
 import { historyReducer, signature, type Action, type HistoryState } from './reducer'
-import { sampleState } from './sampleData'
 
 const STORAGE_KEY = 'setsmith:v1'
 const LOCAL_KEY = 'setsmith:local'
@@ -14,14 +13,16 @@ const BAND_KEY = 'setsmith:band'
 const INVITE_KEY = 'setsmith:invite'
 const SAVE_DELAY_MS = 700
 
+const emptyState = (): BandState => ({ bandName: 'My band', members: [], songs: {}, shows: [], activeShowId: null })
+
 function load(): BandState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) return JSON.parse(raw) as BandState
   } catch {
-    // Storage blocked or corrupt: fall back to the sample band.
+    // Storage blocked or corrupt: fall back to a blank band.
   }
-  return sampleState
+  return emptyState()
 }
 
 const lsGet = (key: string) => {
