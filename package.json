@@ -1,0 +1,11 @@
+{
+  "name": "setsmith",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w client",
+    "test": "npm test -w client && npm test -w server"
+  }
+}
