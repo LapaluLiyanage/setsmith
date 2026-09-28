@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { buildExport, pdfFileName, toShareText } from '../lib/exportData'
 import type { Show } from '../lib/types'
+import { useDrawerIn } from '../lib/motion'
 import { useStore } from '../state/store'
 
 type Status = { kind: 'working' } | { kind: 'ready'; blob: Blob; url: string } | { kind: 'error'; message: string }
 
 export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void }) {
   const { state } = useStore()
+  const drawerRef = useRef<HTMLElement>(null)
+  const scrimRef = useRef<HTMLDivElement>(null)
+  useDrawerIn(drawerRef, scrimRef)
   const data = useMemo(() => buildExport(show, state.songs, state.members, state.bandName), [show, state.songs, state.members, state.bandName])
   const [status, setStatus] = useState<Status>({ kind: 'working' })
   const [note, setNote] = useState<string | null>(null)
@@ -78,11 +82,11 @@ export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void
   const mailto = `mailto:?subject=${encodeURIComponent(`Setlist: ${data.showName}`)}&body=${encodeURIComponent(`${shareText}\n\n(PDF attached)`)}`
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer drawer--wide" role="dialog" aria-modal="true" aria-labelledby="export-title" onClick={(e) => e.stopPropagation()}>
+    <div className="scrim" ref={scrimRef} onClick={onClose}>
+      <aside ref={drawerRef} className="drawer drawer--wide" role="dialog" aria-modal="true" aria-labelledby="export-title" onClick={(e) => e.stopPropagation()}>
         <header className="drawer__head">
-          <h2 id="export-title">Send setlist</h2>
-          <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
+          <div><span className="eyebrow">Export</span><h2 id="export-title">Send setlist</h2></div>
+          <button className="icon-btn icon-btn--lg" onClick={onClose} aria-label="Close">×</button>
         </header>
         <div className="drawer__body">
           {gaps.length > 0 && (
@@ -92,12 +96,12 @@ export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void
           )}
 
           <div className="export-actions">
-            <button className="btn btn--primary" onClick={download} disabled={status.kind !== 'ready'}>Download PDF</button>
-            {canShareFile && <button className="btn" onClick={sharePdf}>Share PDF (WhatsApp, etc.)</button>}
-            <a className="btn" href={mailto}>Email</a>
-            <button className="btn" onClick={copyText}>Copy as text</button>
+            <button className="pill pill--accent" onClick={download} disabled={status.kind !== 'ready'}>Download PDF</button>
+            {canShareFile && <button className="pill" onClick={sharePdf}>Share PDF (WhatsApp, etc.)</button>}
+            <a className="pill" href={mailto}>Email</a>
+            <button className="pill" onClick={copyText}>Copy as text</button>
           </div>
-          <p className="muted small">
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             Email opens your mail app with the setlist in the message; attach the downloaded PDF before sending.
           </p>
           {note && <p className="status" role="status">{note}</p>}

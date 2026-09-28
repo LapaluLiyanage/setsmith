@@ -3,9 +3,23 @@ import { BandPanel } from './components/BandPanel'
 import { ExportPanel } from './components/ExportPanel'
 import { SetlistEditor } from './components/SetlistEditor'
 import { newId, useStore } from './state/store'
+import { useTheme } from './state/theme'
+
+/** Anvil with a music note resting on it: the Setsmith mark from the design. */
+function Mark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden fill="currentColor">
+      <rect x="13" y="1" width="2" height="11" />
+      <ellipse cx="11.5" cy="11" rx="3.5" ry="3" />
+      <path d="M0 15h26l-4.2 6H4.2z" />
+      <rect x="8" y="21" width="10" height="5" />
+    </svg>
+  )
+}
 
 export default function App() {
-  const { state, dispatch, canUndo } = useStore()
+  const { state, dispatch } = useStore()
+  const [theme, toggleTheme] = useTheme()
   const [bandOpen, setBandOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const show = state.shows.find((s) => s.id === state.activeShowId) ?? null
@@ -34,38 +48,40 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <svg viewBox="0 0 32 32" aria-hidden className="brand__mark">
-            <path d="M4 20h18c0-3 2-5 6-5v-3H10c-3 0-5 2-6 5z" fill="currentColor" />
-            <path d="M12 20v6h8v-6" fill="currentColor" opacity=".6" />
-            <circle cx="21" cy="7" r="2.4" fill="var(--accent)" />
-            <path d="M23.4 7V1.5l3.6 1" stroke="var(--accent)" strokeWidth="1.6" fill="none" />
-          </svg>
-          <span className="brand__name">Setsmith</span>
-          <span className="brand__band">{state.bandName}</span>
-        </div>
-        <div className="topbar__actions">
-          <select id="show-picker" aria-label="Choose show" value={show?.id ?? ''}
+      <div className="frame">
+        <header className="topbar">
+          <div className="brand">
+            <Mark />
+            <span className="brand__name">Setsmith</span>
+            <span className="brand__band">{state.bandName.toUpperCase()}</span>
+          </div>
+          <div className="topbar__spacer" />
+          <nav className="nav" aria-label="Main">
+            <span className="nav__item nav__item--active" aria-current="page">Setlist</span>
+            <button className="nav__item" disabled title="Coming soon">Stage view <span className="nav__soon">SOON</span></button>
+            <button className="nav__item" disabled title="Coming soon">Library <span className="nav__soon">SOON</span></button>
+            <button className="nav__item nav__item--keep" onClick={() => setBandOpen(true)}>Band</button>
+            <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
+              {theme === 'dark' ? 'Light' : 'Dark'}
+            </button>
+          </nav>
+          <select id="show-picker" className="show-select" aria-label="Choose show" value={show?.id ?? ''}
             onChange={(e) => dispatch({ type: 'selectShow', showId: e.target.value })}>
             {state.shows.map((s) => <option key={s.id} value={s.id}>{s.date} · {s.name}</option>)}
           </select>
-          <button className="btn" onClick={addShow}>New show</button>
-          <button className="btn" onClick={() => setBandOpen(true)}>Band</button>
-          <button className="btn" disabled={!canUndo} onClick={() => dispatch({ type: 'undo' })} title="Undo (Ctrl+Z)">Undo</button>
-          <button className="btn btn--primary" disabled={!show} onClick={() => setExportOpen(true)}>Export PDF</button>
-        </div>
-      </header>
+          <button className="pill pill--dark" onClick={addShow}>+ New show</button>
+        </header>
 
-      <main className="main">
-        {show ? <SetlistEditor key={show.id} show={show} /> : (
+        {show ? (
+          <SetlistEditor key={show.id} show={show} theme={theme} onShare={() => setBandOpen(true)} onExport={() => setExportOpen(true)} />
+        ) : (
           <div className="empty">
             <h1>No shows yet</h1>
-            <p>Create a show, split it into sessions and start adding songs.</p>
-            <button className="btn btn--primary" onClick={addShow}>New show</button>
+            <p className="muted">Create a show, split it into sessions and start adding songs.</p>
+            <button className="pill pill--accent pill--lg" onClick={addShow}>New show</button>
           </div>
         )}
-      </main>
+      </div>
 
       {bandOpen && <BandPanel onClose={() => setBandOpen(false)} />}
       {exportOpen && show && <ExportPanel show={show} onClose={() => setExportOpen(false)} />}

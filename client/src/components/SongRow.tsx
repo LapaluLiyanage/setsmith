@@ -1,95 +1,118 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { camelot, formatKey, transposeKey } from '../lib/music'
 import { formatDuration } from '../lib/setlist'
+import { singerBadge } from '../lib/singers'
 import type { Member, SetlistItem, Song } from '../lib/types'
 import { thumbUrl, watchUrl } from '../lib/youtube'
-import { useStore } from '../state/store'
 
 interface Props {
   item: SetlistItem
   song: Song
   position: number
-  singers: Member[]
-  swapSelected: boolean
-  onSwapClick: () => void
+  members: Member[]
+  selected: boolean
+  onTap: () => void
   onEdit: () => void
-  keyClash: boolean
-  singerOverload: boolean
+  onSinger: (singerId: string | null) => void
 }
 
-export function SongRow({ item, song, position, singers, swapSelected, onSwapClick, onEdit, keyClash, singerOverload }: Props) {
-  const { dispatch } = useStore()
+const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
+
+export function SongRow({ item, song, position, members, selected, onTap, onEdit, onSinger }: Props) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  const performedKey = song.key ? transposeKey(song.key, item.transpose) : null
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenuOpen(false)
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [menuOpen])
+
+  const badge = singerBadge(members, item.singerId)
+  const singers = members.filter((m) => m.isSinger)
+  const played = song.key ? transposeKey(song.key, item.transpose) : null
+  const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
+
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.target !== e.currentTarget) return
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap() }
+  }
 
   return (
     <li
       ref={setNodeRef}
+      data-sid={item.id}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={`row${isDragging ? ' row--dragging' : ''}${swapSelected ? ' row--swap' : ''}`}
+      className={`song${isDragging ? ' song--dragging' : ''}${selected ? ' song--selected' : ''}`}
+      onClick={onTap}
+      onKeyDown={onKeyDown}
+      tabIndex={0}
+      aria-label={`${position}. ${song.title}. ${selected ? 'Selected for swap.' : 'Press to pick for quick swap.'}`}
     >
-      {(keyClash || singerOverload) && (
-        <div className="row__warn" role="note">
-          {keyClash && <span>Key jump from the previous song</span>}
-          {singerOverload && <span>Same singer 4+ songs in a row</span>}
+      <button ref={setActivatorNodeRef} className="song__grip" aria-label={`Drag ${song.title}`} onClick={stop} {...attributes} {...listeners}>
+        <span>⠿</span><span>{String(position).padStart(2, '0')}</span>
+      </button>
+
+      <div className="song__thumb">
+        {song.youtubeId ? <img src={thumbUrl(song.youtubeId)} alt="" loading="lazy" /> : <span>YT</span>}
+      </div>
+
+      <div className="song__body">
+        <div>
+          <span className="song__title">{song.title}</span>
+          <span className="song__artist">{song.artist || 'Unknown artist'}</span>
         </div>
-      )}
-      <div className="row__main">
-        <button
-          ref={setActivatorNodeRef}
-          className="row__handle"
-          aria-label={`Drag ${song.title}`}
-          {...attributes}
-          {...listeners}
-        >
-          ⠿
-        </button>
-        <span className="row__num">{position}</span>
-        {song.youtubeId ? (
-          <a className="row__thumb" href={watchUrl(song.youtubeId)} target="_blank" rel="noreferrer" title="Open on YouTube">
-            <img src={thumbUrl(song.youtubeId)} alt="" loading="lazy" />
-            <span className="row__play" aria-hidden>▶</span>
-          </a>
-        ) : (
-          <span className="row__thumb row__thumb--empty" title="No YouTube link yet">♪</span>
-        )}
-        <button className="row__title" onClick={onEdit} title="Edit song">
-          <strong>{song.title}</strong>
-          <span>{song.artist || 'Unknown artist'}</span>
-        </button>
-        <select
-          className="row__singer"
-          aria-label="Singer"
-          value={item.singerId ?? ''}
-          onChange={(e) => dispatch({ type: 'updateItem', itemId: item.id, patch: { singerId: e.target.value || null } })}
-        >
-          <option value="">No singer</option>
-          {singers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        <span className={`badge badge--bpm${song.bpm ? '' : ' badge--missing'}`} title={song.bpmSource ? `BPM source: ${song.bpmSource}` : 'BPM not set'}>
-          {song.bpm ?? '—'} <small>BPM</small>
-        </span>
-        <span className={`badge badge--key${performedKey ? '' : ' badge--missing'}`} title={song.key ? `Original: ${formatKey(song.key)}` : 'Key not set'}>
-          {performedKey ? (
-            <>
-              {formatKey(performedKey).replace(' major', '').replace(' minor', 'm')}
-              <small>{camelot(performedKey)}</small>
-            </>
-          ) : '—'}
-        </span>
-        {item.transpose !== 0 && <span className="badge badge--transpose">{item.transpose > 0 ? '+' : ''}{item.transpose}</span>}
-        <span className="row__dur">{formatDuration(song.durationSec)}</span>
-        <button
-          className={`row__swap${swapSelected ? ' is-active' : ''}`}
-          onClick={onSwapClick}
-          aria-pressed={swapSelected}
-          title={swapSelected ? 'Cancel swap' : 'Quick swap: pick this song, then another'}
-        >
-          ⇄
-        </button>
+        <div className="song__tags">
+          <div className="menu-wrap" ref={menuRef}>
+            <button className="singer-btn" aria-haspopup="menu" aria-expanded={menuOpen}
+              onClick={(e) => { stop(e); setMenuOpen((o) => !o) }}>
+              <span className="avatar" style={{ background: badge.color }}>{badge.initial}</span>{badge.name}
+            </button>
+            {menuOpen && (
+              <div className="menu menu--left" role="menu" onClick={stop}>
+                {[...singers, null].map((m) => {
+                  const b = singerBadge(members, m?.id ?? null)
+                  return (
+                    <button key={m?.id ?? 'none'} role="menuitem" className="menu__row"
+                      onClick={() => { setMenuOpen(false); onSinger(m?.id ?? null) }}>
+                      <span className="avatar avatar--lg" style={{ background: b.color }}>{b.initial}</span>
+                      <span>{b.name}</span>
+                      <span className="mono">{(m?.id ?? null) === item.singerId ? '●' : ''}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          <span className={`tag tag--dark${song.bpm ? '' : ' tag--missing'}`} title={song.bpmSource ? `BPM from ${song.bpmSource}` : 'No BPM yet'}>
+            {song.bpm ?? '—'} bpm
+          </span>
+          <span className={`tag${played ? '' : ' tag--missing'}`} title={song.key ? `Original key: ${formatKey(song.key)}` : 'No key yet'}>
+            {played ? `${shortKey(formatKey(played))} · ${camelot(played)}` : 'key ?'}
+          </span>
+          {item.transpose !== 0 && song.key && (
+            <span className="tag tag--accent">{item.transpose > 0 ? '+' : '−'}{Math.abs(item.transpose)} → {shortKey(formatKey(played!))}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="song__side">
+        <span className="song__dur">{formatDuration(song.durationSec)}</span>
+        <div className="song__actions">
+          {song.youtubeId ? (
+            <a className="icon-btn icon-btn--dark" href={watchUrl(song.youtubeId)} target="_blank" rel="noreferrer"
+              title="Open on YouTube" aria-label={`Play ${song.title} on YouTube`} onClick={stop}>▶</a>
+          ) : (
+            <a className="icon-btn" title="Search YouTube" aria-label={`Search ${song.title} on YouTube`} target="_blank" rel="noreferrer"
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`} onClick={stop}>▶</a>
+          )}
+          <button className="icon-btn" title="Edit song" aria-label={`Edit ${song.title}`} onClick={(e) => { stop(e); onEdit() }}>⋯</button>
+        </div>
       </div>
     </li>
   )

@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import type { Role } from '../lib/types'
+import { useDrawerIn } from '../lib/motion'
 import { newId, useStore } from '../state/store'
 
 const ROLE_HELP: Record<Role, string> = {
@@ -10,6 +11,9 @@ const ROLE_HELP: Record<Role, string> = {
 
 export function BandPanel({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useStore()
+  const drawerRef = useRef<HTMLElement>(null)
+  const scrimRef = useRef<HTMLDivElement>(null)
+  useDrawerIn(drawerRef, scrimRef)
   const [name, setName] = useState('')
   const [role, setRole] = useState<Role>('viewer')
   const [isSinger, setIsSinger] = useState(true)
@@ -22,11 +26,11 @@ export function BandPanel({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="drawer-backdrop" onClick={onClose}>
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="band-title" onClick={(e) => e.stopPropagation()}>
+    <div className="scrim" ref={scrimRef} onClick={onClose}>
+      <aside ref={drawerRef} className="drawer" role="dialog" aria-modal="true" aria-labelledby="band-title" onClick={(e) => e.stopPropagation()}>
         <header className="drawer__head">
-          <h2 id="band-title">{state.bandName} members</h2>
-          <button className="btn btn--ghost" onClick={onClose} aria-label="Close">✕</button>
+          <div><span className="eyebrow">Band</span><h2 id="band-title">{state.bandName}</h2></div>
+          <button className="icon-btn icon-btn--lg" onClick={onClose} aria-label="Close">×</button>
         </header>
         <div className="drawer__body">
           <p className="muted">
@@ -34,8 +38,8 @@ export function BandPanel({ onClose }: { onClose: () => void }) {
           </p>
           <ul className="members">
             {state.members.map((m) => (
-              <li key={m.id}>
-                <input id={`member-name-${m.id}`} value={m.name} aria-label="Name"
+              <li key={m.id} className="member">
+                <input type="text" id={`member-name-${m.id}`} value={m.name} aria-label="Name"
                   onChange={(e) => dispatch({ type: 'updateMember', memberId: m.id, patch: { name: e.target.value } })} />
                 <select id={`member-role-${m.id}`} value={m.role} aria-label="Role" title={ROLE_HELP[m.role]}
                   onChange={(e) => dispatch({ type: 'updateMember', memberId: m.id, patch: { role: e.target.value as Role } })}>
@@ -48,20 +52,20 @@ export function BandPanel({ onClose }: { onClose: () => void }) {
                     onChange={(e) => dispatch({ type: 'updateMember', memberId: m.id, patch: { isSinger: e.target.checked } })} />
                   Singer
                 </label>
-                <button className="btn btn--ghost" aria-label={`Remove ${m.name}`}
+                <button className="icon-btn" aria-label={`Remove ${m.name}`}
                   onClick={() => dispatch({ type: 'removeMember', memberId: m.id })}>✕</button>
               </li>
             ))}
           </ul>
-          <form className="members__add" onSubmit={onAdd}>
-            <input id="new-member-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" aria-label="New member name" />
+          <form className="member" onSubmit={onAdd}>
+            <input type="text" id="new-member-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" aria-label="New member name" />
             <select id="new-member-role" value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label="New member role">
               <option value="editor">Editor</option>
               <option value="viewer">Viewer</option>
               <option value="manager">Manager</option>
             </select>
             <label className="check"><input id="new-member-singer" type="checkbox" checked={isSinger} onChange={(e) => setIsSinger(e.target.checked)} /> Singer</label>
-            <button className="btn btn--primary" type="submit">Add</button>
+            <button className="pill pill--accent" type="submit">Add</button>
           </form>
           <dl className="roles">
             {(Object.keys(ROLE_HELP) as Role[]).map((r) => <div key={r}><dt>{r}</dt><dd>{ROLE_HELP[r]}</dd></div>)}

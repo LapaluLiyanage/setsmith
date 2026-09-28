@@ -51,7 +51,7 @@ BPM is never taken by downloading YouTube audio, which YouTube's terms don't all
 ## Layout
 
 ```
-client/    React + Vite + TypeScript, dnd-kit
+client/    React + Vite + TypeScript, dnd-kit, GSAP, Three.js (energy map, lazy-loaded)
   src/lib/     pure logic (setlist moves, Camelot keys, tap tempo, YouTube URLs) + tests
   src/state/   reducer with undo, sample data, local save
   src/components/
@@ -67,4 +67,5 @@ supabase/  schema.sql with row-level security per band
 4. Song library view with filters
 5. Singer key ranges and transpose suggestions
 6. Stage view for phones
-7. Apply the Claude Design UI
+7. ~~Apply the Claude Design UI~~ (setlist editor, add-song, band and export panels; light/dark;
+   GSAP card entrance, FLIP reorder, toasts; Three.js energy map)
