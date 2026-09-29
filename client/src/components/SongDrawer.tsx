@@ -8,6 +8,7 @@ import { addTap, bpmFromTaps } from '../lib/tapTempo'
 import type { BpmSource, Member, MusicalKey, SetlistItem, Song } from '../lib/types'
 import { parseYouTubeId, thumbUrl } from '../lib/youtube'
 import { newId, useStore } from '../state/store'
+import { SongPlayer } from './SongPlayer'
 
 type Target =
   | { mode: 'add'; sessionId: string; sessionName: string }
@@ -46,6 +47,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [phase, setPhase] = useState<'search' | 'details'>(existing ? 'details' : 'search')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<VideoInfo[]>([])
+  const [previewId, setPreviewId] = useState<string | null>(null)
   const [isMashup, setIsMashup] = useState(false)
   const [pickSlot, setPickSlot] = useState<'primary' | 'secondary'>('primary')
   const [youtubeId, setYoutubeId] = useState<string | null>(existing?.song.youtubeId ?? null)
@@ -129,6 +131,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       else {
         const found = await searchYouTube(text)
         setResults(found)
+        setPreviewId(null)
         setStatus(found.length ? null : 'No videos found. Try other words, or paste a link.')
       }
     } catch (err) {
@@ -241,10 +244,20 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                 <div className="results">
                   <span className="eyebrow">YouTube results</span>
                   {results.map((r) => (
-                    <button type="button" key={r.youtubeId} className="result" onClick={() => pick(r)}>
-                      <div className="result__thumb"><img src={thumbUrl(r.youtubeId)} alt="" />{r.durationSec ? <span>{toClock(r.durationSec)}</span> : null}</div>
-                      <div><b>{r.title}</b><small>{r.channel}</small></div>
-                    </button>
+                    <div key={r.youtubeId} className="result">
+                      <button type="button" className="result__pick" onClick={() => pick(r)}>
+                        <div className="result__thumb"><img src={thumbUrl(r.youtubeId)} alt="" />{r.durationSec ? <span>{toClock(r.durationSec)}</span> : null}</div>
+                        <div className="result__meta"><b>{r.title}</b><small>{r.channel}</small></div>
+                      </button>
+                      <button type="button" className="icon-btn" aria-pressed={previewId === r.youtubeId}
+                        aria-label={previewId === r.youtubeId ? `Stop previewing ${r.title}` : `Preview ${r.title}`}
+                        onClick={() => setPreviewId((p) => (p === r.youtubeId ? null : r.youtubeId))}>
+                        {previewId === r.youtubeId ? '■' : '▶'}
+                      </button>
+                      {previewId === r.youtubeId && (
+                        <div className="result__preview"><SongPlayer youtubeId={r.youtubeId} title={r.title} artist={r.channel} /></div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
