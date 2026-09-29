@@ -342,9 +342,9 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage__bpm { font: 600 44px/1 var(--mono); }
 .stage__accent { font: 500 13px var(--mono); color: #e2f24a; }
-.stage__notes { border: 1px solid #e2f24a; background: #10110f; gap: 6px; }
+.stage__notes { flex-direction: column; align-items: stretch; border: 1px solid #e2f24a; background: #10110f; gap: 6px; }
 .stage__notes textarea {
-  font: 500 15px/1.35 var(--font); color: #f4f4ef; background: transparent; border: 0; padding: 0;
+  width: 100%; font: 500 15px/1.35 var(--font); color: #f4f4ef; background: transparent; border: 0; padding: 0;
   min-height: 44px; height: auto; resize: vertical;
 }
 .stage__notes textarea::placeholder { color: #6a6d66; }
