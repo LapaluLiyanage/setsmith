@@ -70,8 +70,20 @@ create table now_playing (
   updated_by uuid references auth.users(id)
 );
 
+-- A viewer's (or anyone's) private note on one setlist item, e.g. jotted in Stage view -- visible
+-- only to whoever wrote it, never synced into the shared band_data document.
+create table item_notes (
+  band_id uuid not null references bands(id) on delete cascade,
+  item_id text not null,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  note text not null default '',
+  updated_at timestamptz not null default now(),
+  primary key (band_id, item_id, user_id)
+);
+
 alter table bands enable row level security;
 alter table band_access enable row level security;
+alter table item_notes enable row level security;
 alter table band_data enable row level security;
 alter table invites enable row level security;
 alter table shares enable row level security;
@@ -101,6 +113,11 @@ create policy "members read now playing" on now_playing for select to authentica
 -- Anyone with a show's public share link follows the live "now playing" pointer, no account needed.
 create policy "public read now playing via share" on now_playing for select to anon
   using (exists (select 1 from shares s where s.band_id = now_playing.band_id and s.show_id = now_playing.show_id));
+
+-- Strictly your own notes: even a manager can't read another member's private note.
+create policy "own item notes only" on item_notes for all to authenticated
+  using (user_id = (select auth.uid()) and my_role(band_id) is not null)
+  with check (user_id = (select auth.uid()) and my_role(band_id) is not null);
 
 create policy "manager reads invites" on invites for select to authenticated
   using (my_role(band_id) = 'manager');
@@ -146,40 +163,6 @@ begin
    where band_id = p_band and rev = p_expected
    returning rev into new_rev;
   return coalesce(new_rev, -1);
-end $$;
-
--- Sets one setlist item's note. Unlike save_band_data, viewers ARE allowed here -- it's the one
--- write scoped narrowly enough (just a text field, on one item, no reordering/BPM/key/song-list
--- access) to be safe to hand to a read-only band member from Stage view.
-create function set_item_note(p_band uuid, p_item_id text, p_note text) returns void
-language plpgsql security definer set search_path = public as $$
-declare
-  d jsonb;
-  next_data jsonb;
-  found boolean := false;
-  si int; ssi int; ii int;
-begin
-  if my_role(p_band) is null then raise exception 'not allowed'; end if;
-  select data into d from band_data where band_id = p_band for update;
-  if d is null then raise exception 'band not found'; end if;
-
-  next_data := d;
-  for si in 0 .. coalesce(jsonb_array_length(d->'shows'), 0) - 1 loop
-    for ssi in 0 .. coalesce(jsonb_array_length(d->'shows'->si->'sessions'), 0) - 1 loop
-      for ii in 0 .. coalesce(jsonb_array_length(d->'shows'->si->'sessions'->ssi->'items'), 0) - 1 loop
-        if d->'shows'->si->'sessions'->ssi->'items'->ii->>'id' = p_item_id then
-          next_data := jsonb_set(next_data,
-            array['shows', si::text, 'sessions', ssi::text, 'items', ii::text, 'notes'],
-            to_jsonb(p_note));
-          found := true;
-        end if;
-      end loop;
-    end loop;
-  end loop;
-  if not found then raise exception 'setlist item not found'; end if;
-
-  update band_data set data = next_data, rev = rev + 1, updated_at = now(), updated_by = auth.uid()
-   where band_id = p_band;
 end $$;
 
 -- Moves the shared "current song" pointer. Viewers can only read it (see the RLS policy above);
@@ -258,7 +241,7 @@ end $$;
 
 revoke execute on all functions in schema public from public, anon;
 grant execute on function my_role(uuid), create_band(text, jsonb, text), save_band_data(uuid, jsonb, integer),
-  set_now_playing(uuid, text, text), set_item_note(uuid, text, text), accept_invite(text), set_display_name(uuid, text) to authenticated;
+  set_now_playing(uuid, text, text), accept_invite(text), set_display_name(uuid, text) to authenticated;
 grant execute on function get_shared(text) to anon, authenticated;
 
 alter publication supabase_realtime add table band_data, band_access, now_playing;

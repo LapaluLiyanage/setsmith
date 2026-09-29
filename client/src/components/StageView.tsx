@@ -111,12 +111,13 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Stop any playing video, and reset the local chord transpose, when the song changes.
   useEffect(() => { setShowVideo(0); setChordTranspose(0) }, [index])
 
-  // Follow the saved note as it changes (including from someone else's edit); an in-progress
-  // edit of our own isn't overwritten by our own save echoing back.
-  useEffect(() => { setNoteDraft(cur?.notes ?? '') }, [cur?.itemId, cur?.notes])
+  // Your own private note for this song -- nobody else can see it, and it's stored separately
+  // from the shared setlist, so it never syncs to anyone else's screen.
+  const myNote = (cur && cloud.myNotes[cur.itemId]) ?? ''
+  useEffect(() => { setNoteDraft(myNote) }, [cur?.itemId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function saveNote() {
-    if (cur && noteDraft !== cur.notes) cloud.setItemNote(cur.itemId, noteDraft)
+    if (cur && noteDraft !== myNote) cloud.setMyNote(cur.itemId, noteDraft)
   }
 
   // New song slides in from the side you swiped towards.
@@ -226,10 +227,10 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   <span>{cur.duration}</span>
                 </div>
                 <div className="stage__card stage__card--wide stage__notes">
-                  <span className="stage__label">NOTE</span>
+                  <span className="stage__label">YOUR NOTE · ONLY YOU SEE THIS</span>
                   <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} onBlur={saveNote}
-                    placeholder="Add a note for this song — a cue, a reminder, anything…" rows={2} />
-                  {noteDraft !== cur.notes && <button type="button" className="stage__notesave" onClick={saveNote}>Save note</button>}
+                    placeholder="A private cue or reminder — nobody else on the band sees this…" rows={2} />
+                  {noteDraft !== myNote && <button type="button" className="stage__notesave" onClick={saveNote}>Save note</button>}
                 </div>
               </div>
             )}

@@ -50,7 +50,9 @@ export interface Cloud {
   pendingInvite: boolean
   nowPlaying: NowPlaying | null
   setNowPlaying: (showId: string, itemId: string) => void
-  setItemNote: (itemId: string, note: string) => void
+  /** Your own private notes, per setlist item id -- never visible to anyone else. */
+  myNotes: Record<string, string>
+  setMyNote: (itemId: string, note: string) => void
   dismissNotice: () => void
   signOut: () => Promise<void>
   createBand: (name: string) => Promise<string | null>
@@ -91,6 +93,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SyncStatus>('saved')
   const [notice, setNotice] = useState<string | null>(null)
   const [nowPlaying, setNowPlayingState] = useState<NowPlaying | null>(null)
+  const [myNotes, setMyNotes] = useState<Record<string, string>>({})
   const [pendingInvite, setPendingInvite] = useState(() => lsGet(INVITE_KEY) !== null)
 
   const userId = session?.user.id ?? null
@@ -214,18 +217,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setNowPlayingState(data ? { showId: data.show_id as string, itemId: data.item_id as string } : null)
   }, [])
 
+  const fetchMyNotes = useCallback(async (id: string, uid: string) => {
+    if (!supabase) return
+    const { data } = await supabase.from('item_notes').select('item_id, note').eq('band_id', id).eq('user_id', uid)
+    setMyNotes(Object.fromEntries((data ?? []).map((r) => [r.item_id as string, r.note as string])))
+  }, [])
+
   // Load the chosen band's document and keep it live.
   const bandRole = band?.id
   useEffect(() => {
     if (!supabase || !userId || !bandRole) {
       setDataReady(false)
       setNowPlayingState(null)
+      setMyNotes({})
       return
     }
     const client = supabase
     let cancelled = false
     setDataReady(false)
     setNowPlayingState(null)
+    setMyNotes({})
     lsSet(BAND_KEY, bandRole)
     ;(async () => {
       const ok = await fetchBandData(bandRole)
@@ -234,6 +245,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setStatus(ok ? 'saved' : 'error')
       refreshAccess()
       fetchNowPlaying(bandRole)
+      fetchMyNotes(bandRole, userId)
     })()
     const channel = client
       .channel(`band:${bandRole}`)
@@ -256,7 +268,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       cancelled = true
       client.removeChannel(channel)
     }
-  }, [userId, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands, fetchNowPlaying])
+  }, [userId, bandRole, fetchBandData, applyRemote, refreshAccess, refreshBands, fetchNowPlaying, fetchMyNotes])
 
   const flush = useCallback(async () => {
     if (!supabase || !bandRole || saving.current) return
@@ -354,19 +366,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [bandRole, readOnly])
 
-  // Scoped narrower than the normal editor/manager save: viewers can use this too (see
-  // set_item_note in the schema) -- it can only ever touch one item's note text.
-  const setItemNote = useCallback((itemId: string, note: string) => {
-    if (!supabase || !bandRole) return
-    if (readOnly) {
-      rawDispatch({ type: 'updateItem', itemId, patch: { notes: note } })
-      supabase.rpc('set_item_note', { p_band: bandRole, p_item_id: itemId, p_note: note }).then(({ error }) => {
-        if (error) setNotice(`Couldn't save the note: ${error.message}`)
-      })
-    } else {
-      dispatch({ type: 'updateItem', itemId, patch: { notes: note } })
-    }
-  }, [bandRole, readOnly, dispatch])
+  // Private per-user note (item_notes table, RLS-scoped to its own author) -- separate from the
+  // shared band_data document, so it never reaches anyone else, regardless of role.
+  const setMyNote = useCallback((itemId: string, note: string) => {
+    if (!supabase || !bandRole || !userId) return
+    setMyNotes((prev) => ({ ...prev, [itemId]: note }))
+    supabase.from('item_notes').upsert({ band_id: bandRole, item_id: itemId, user_id: userId, note, updated_at: new Date().toISOString() })
+      .then(({ error }) => { if (error) setNotice(`Couldn't save your note: ${error.message}`) })
+  }, [bandRole, userId])
 
   let gate: Gate = 'unconfigured'
   if (supabase) {
@@ -380,7 +387,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const cloud: Cloud = {
     configured: !!supabase, gate, userId, email: session?.user.email ?? null, isAnonymous, bands: bands ?? [], band, role, readOnly,
-    access, status, notice, pendingInvite, nowPlaying, setNowPlaying, setItemNote, dismissNotice: () => setNotice(null), signOut, createBand,
+    access, status, notice, pendingInvite, nowPlaying, setNowPlaying, myNotes, setMyNote, dismissNotice: () => setNotice(null), signOut, createBand,
     joinWithCode, joinAnonymously, switchBand: setBandId, refreshAccess,
   }
 
