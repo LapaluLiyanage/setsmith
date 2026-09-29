@@ -148,6 +148,40 @@ begin
   return coalesce(new_rev, -1);
 end $$;
 
+-- Sets one setlist item's note. Unlike save_band_data, viewers ARE allowed here -- it's the one
+-- write scoped narrowly enough (just a text field, on one item, no reordering/BPM/key/song-list
+-- access) to be safe to hand to a read-only band member from Stage view.
+create function set_item_note(p_band uuid, p_item_id text, p_note text) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  d jsonb;
+  next_data jsonb;
+  found boolean := false;
+  si int; ssi int; ii int;
+begin
+  if my_role(p_band) is null then raise exception 'not allowed'; end if;
+  select data into d from band_data where band_id = p_band for update;
+  if d is null then raise exception 'band not found'; end if;
+
+  next_data := d;
+  for si in 0 .. coalesce(jsonb_array_length(d->'shows'), 0) - 1 loop
+    for ssi in 0 .. coalesce(jsonb_array_length(d->'shows'->si->'sessions'), 0) - 1 loop
+      for ii in 0 .. coalesce(jsonb_array_length(d->'shows'->si->'sessions'->ssi->'items'), 0) - 1 loop
+        if d->'shows'->si->'sessions'->ssi->'items'->ii->>'id' = p_item_id then
+          next_data := jsonb_set(next_data,
+            array['shows', si::text, 'sessions', ssi::text, 'items', ii::text, 'notes'],
+            to_jsonb(p_note));
+          found := true;
+        end if;
+      end loop;
+    end loop;
+  end loop;
+  if not found then raise exception 'setlist item not found'; end if;
+
+  update band_data set data = next_data, rev = rev + 1, updated_at = now(), updated_by = auth.uid()
+   where band_id = p_band;
+end $$;
+
 -- Moves the shared "current song" pointer. Viewers can only read it (see the RLS policy above);
 -- managers and editors drive it from Stage view.
 create function set_now_playing(p_band uuid, p_show text, p_item text) returns void
@@ -224,7 +258,7 @@ end $$;
 
 revoke execute on all functions in schema public from public, anon;
 grant execute on function my_role(uuid), create_band(text, jsonb, text), save_band_data(uuid, jsonb, integer),
-  set_now_playing(uuid, text, text), accept_invite(text), set_display_name(uuid, text) to authenticated;
+  set_now_playing(uuid, text, text), set_item_note(uuid, text, text), accept_invite(text), set_display_name(uuid, text) to authenticated;
 grant execute on function get_shared(text) to anon, authenticated;
 
 alter publication supabase_realtime add table band_data, band_access, now_playing;

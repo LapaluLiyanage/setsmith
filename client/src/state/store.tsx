@@ -50,6 +50,7 @@ export interface Cloud {
   pendingInvite: boolean
   nowPlaying: NowPlaying | null
   setNowPlaying: (showId: string, itemId: string) => void
+  setItemNote: (itemId: string, note: string) => void
   dismissNotice: () => void
   signOut: () => Promise<void>
   createBand: (name: string) => Promise<string | null>
@@ -353,6 +354,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }, [bandRole, readOnly])
 
+  // Scoped narrower than the normal editor/manager save: viewers can use this too (see
+  // set_item_note in the schema) -- it can only ever touch one item's note text.
+  const setItemNote = useCallback((itemId: string, note: string) => {
+    if (!supabase || !bandRole) return
+    if (readOnly) {
+      rawDispatch({ type: 'updateItem', itemId, patch: { notes: note } })
+      supabase.rpc('set_item_note', { p_band: bandRole, p_item_id: itemId, p_note: note }).then(({ error }) => {
+        if (error) setNotice(`Couldn't save the note: ${error.message}`)
+      })
+    } else {
+      dispatch({ type: 'updateItem', itemId, patch: { notes: note } })
+    }
+  }, [bandRole, readOnly, dispatch])
+
   let gate: Gate = 'unconfigured'
   if (supabase) {
     gate = 'app'
@@ -365,7 +380,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const cloud: Cloud = {
     configured: !!supabase, gate, userId, email: session?.user.email ?? null, isAnonymous, bands: bands ?? [], band, role, readOnly,
-    access, status, notice, pendingInvite, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), signOut, createBand,
+    access, status, notice, pendingInvite, nowPlaying, setNowPlaying, setItemNote, dismissNotice: () => setNotice(null), signOut, createBand,
     joinWithCode, joinAnonymously, switchBand: setBandId, refreshAccess,
   }
 

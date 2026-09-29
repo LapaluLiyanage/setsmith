@@ -49,6 +49,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const [showChords, setShowChords] = useState(false)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
+  const [noteDraft, setNoteDraft] = useState('')
   const direction = useRef(1)
   const x0 = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -110,6 +111,14 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Stop any playing video, and reset the local chord transpose, when the song changes.
   useEffect(() => { setShowVideo(0); setChordTranspose(0) }, [index])
 
+  // Follow the saved note as it changes (including from someone else's edit); an in-progress
+  // edit of our own isn't overwritten by our own save echoing back.
+  useEffect(() => { setNoteDraft(cur?.notes ?? '') }, [cur?.itemId, cur?.notes])
+
+  function saveNote() {
+    if (cur && noteDraft !== cur.notes) cloud.setItemNote(cur.itemId, noteDraft)
+  }
+
   // New song slides in from the side you swiped towards.
   useLayoutEffect(() => {
     if (reducedMotion() || !currentRef.current) return
@@ -131,7 +140,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Buttons, links and the chord/player areas handle their own taps and drags; a stray
   // pointerup landing back on the root (common on mobile touch) must not read as a swipe.
   function isSwipeable(target: EventTarget | null): boolean {
-    return !(target instanceof Element && target.closest('button, a, input, select, .stage__chords, .stage__chordbar, .mp3'))
+    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .mp3'))
   }
   function onPointerDown(e: PointerEvent) { x0.current = isSwipeable(e.target) ? e.clientX : null }
   function onPointerUp(e: PointerEvent) {
@@ -216,7 +225,12 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   <b className="stage__bpm">{cur.bpm ?? '—'}</b>
                   <span>{cur.duration}</span>
                 </div>
-                {cur.notes && <div className="stage__card stage__card--wide stage__notes">{cur.notes}</div>}
+                <div className="stage__card stage__card--wide stage__notes">
+                  <span className="stage__label">NOTE</span>
+                  <textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} onBlur={saveNote}
+                    placeholder="Add a note for this song — a cue, a reminder, anything…" rows={2} />
+                  {noteDraft !== cur.notes && <button type="button" className="stage__notesave" onClick={saveNote}>Save note</button>}
+                </div>
               </div>
             )}
             {cur.youtubeId && showVideo !== 0 && (

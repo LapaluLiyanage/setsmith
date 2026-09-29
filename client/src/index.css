@@ -342,7 +342,13 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__big { font-size: 30px; font-weight: 700; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage__bpm { font: 600 44px/1 var(--mono); }
 .stage__accent { font: 500 13px var(--mono); color: #e2f24a; }
-.stage__notes { font-size: 17px; line-height: 1.35; color: #f4f4ef; border: 1px solid #e2f24a; background: #10110f; }
+.stage__notes { border: 1px solid #e2f24a; background: #10110f; gap: 6px; }
+.stage__notes textarea {
+  font: 500 15px/1.35 var(--font); color: #f4f4ef; background: transparent; border: 0; padding: 0;
+  min-height: 44px; height: auto; resize: vertical;
+}
+.stage__notes textarea::placeholder { color: #6a6d66; }
+.stage__notesave { align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 15px; background: #e2f24a; color: #111; border: 0; font: 600 11px var(--mono); letter-spacing: .04em; }
 .stage__ytrow { display: flex; align-items: center; gap: 18px; }
 .stage__yt { align-self: flex-start; color: #a4a79f; font: 500 13px var(--mono); text-decoration: none; padding: 8px 0; background: none; border: 0; cursor: pointer; }
 .stage__yt:hover { color: #e2f24a; }
