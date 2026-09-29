@@ -8,6 +8,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { reducedMotion } from '../lib/motion'
 import { findItem, formatDuration, keyClashes, moveItem, sessionDurationSec } from '../lib/setlist'
 import type { Session, Show } from '../lib/types'
+import { loadYouTubeApi } from '../lib/ytPlayer'
 import { newId, useStore } from '../state/store'
 import type { Theme } from '../state/theme'
 import { EnergyMap } from './EnergyMap'
@@ -51,6 +52,10 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
   const skipFlip = useRef(false)
 
   const notify = useCallback((msg: string) => setToast((t) => ({ msg, n: (t?.n ?? 0) + 1 })), [])
+
+  // Preload the YouTube player script so the first tap of a row's play button actually
+  // autoplays instead of needing a second tap once the script has caught up.
+  useEffect(() => { loadYouTubeApi() }, [])
 
   useEffect(() => {
     if (!toast) return

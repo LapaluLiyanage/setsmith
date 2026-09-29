@@ -5,6 +5,7 @@ import { transposeChordSheet } from '../lib/chordSheet'
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
+import { loadYouTubeApi } from '../lib/ytPlayer'
 import { useStore } from '../state/store'
 import { SongPlayer } from './SongPlayer'
 
@@ -55,6 +56,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const beatRef = useRef<HTMLDivElement>(null)
   const clock = useClock()
   useWakeLock()
+
+  // Fetch the YouTube player script as soon as Stage view opens, not on the first tap of Play --
+  // by then it's already loaded, so playVideo() still runs within the tap's gesture and isn't
+  // blocked by mobile autoplay policies the way a fresh, mid-tap script load would be.
+  useEffect(() => { loadYouTubeApi() }, [])
 
   // Synced shows: everyone follows the shared pointer; only managers/editors can move it.
   const synced = cloud.configured && !!cloud.band

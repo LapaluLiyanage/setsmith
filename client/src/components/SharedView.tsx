@@ -4,6 +4,7 @@ import { buildExport, formatShowDate, pdfFileName } from '../lib/exportData'
 import { buildStageList } from '../lib/stage'
 import { supabase } from '../lib/supabase'
 import type { Member, Show, Song } from '../lib/types'
+import { loadYouTubeApi } from '../lib/ytPlayer'
 import { SongPlayer } from './SongPlayer'
 
 interface Shared {
@@ -24,6 +25,8 @@ export function SharedView({ token }: { token: string }) {
   const [showChords, setShowChords] = useState(false)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => { loadYouTubeApi() }, [])
 
   useEffect(() => {
     if (!supabase) return setShared(null)
