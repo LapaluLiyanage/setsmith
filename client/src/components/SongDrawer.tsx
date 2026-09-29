@@ -46,6 +46,8 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [phase, setPhase] = useState<'search' | 'details'>(existing ? 'details' : 'search')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<VideoInfo[]>([])
+  const [isMashup, setIsMashup] = useState(false)
+  const [mashupFirst, setMashupFirst] = useState<VideoInfo | null>(null)
   const [youtubeId, setYoutubeId] = useState<string | null>(existing?.song.youtubeId ?? null)
   const [channel, setChannel] = useState('')
   const [title, setTitle] = useState(existing?.song.title ?? '')
@@ -85,11 +87,34 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
     return () => ctx.revert()
   }, [phase])
 
+  const cleanChannel = (channelName: string) => channelName.replace(/(VEVO| - Topic)$/i, '').trim()
+
   function pick(v: VideoInfo) {
+    if (isMashup && !mashupFirst) {
+      setMashupFirst(v)
+      setQuery('')
+      setResults([])
+      setStatus(null)
+      return
+    }
+    if (isMashup && mashupFirst) {
+      const first = mashupFirst
+      setYoutubeId(first.youtubeId)
+      setChannel(first.channel)
+      setTitle(`${first.title} / ${v.title}`)
+      setArtist(`${cleanChannel(first.channel)} / ${cleanChannel(v.channel)}`)
+      const totalSec = (first.durationSec ?? 0) + (v.durationSec ?? 0)
+      if (totalSec) setDuration(toClock(totalSec))
+      setMashupFirst(null)
+      setResults([])
+      setStatus(null)
+      setPhase('details')
+      return
+    }
     setYoutubeId(v.youtubeId)
     setChannel(v.channel)
     if (!title || phase === 'search') setTitle(v.title)
-    if (!artist || phase === 'search') setArtist(v.channel.replace(/(VEVO| - Topic)$/i, '').trim())
+    if (!artist || phase === 'search') setArtist(cleanChannel(v.channel))
     if (v.durationSec) setDuration(toClock(v.durationSec))
     setResults([])
     setStatus(null)
@@ -193,6 +218,20 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
         <form id="song-form" ref={bodyRef} className="drawer__body" onSubmit={onSubmit}>
           {phase === 'search' && (
             <>
+              {target.mode === 'add' && (
+                <label className="check">
+                  <input type="checkbox" checked={isMashup}
+                    onChange={(e) => { setIsMashup(e.target.checked); setMashupFirst(null); setQuery(''); setResults([]); setStatus(null) }} />
+                  This is a mashup of two songs
+                </label>
+              )}
+              {isMashup && (
+                <p className="status" role="status">
+                  {mashupFirst
+                    ? <>First song: <b>{mashupFirst.title}</b> — now search for the second song.</>
+                    : 'Search and pick the first song.'}
+                </p>
+              )}
               <div className="search">
                 <b>YT</b>
                 <input id="song-query" autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
