@@ -122,7 +122,12 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     return () => { tween.kill() }
   }, [cur?.bpm, index])
 
-  function onPointerDown(e: PointerEvent) { x0.current = e.clientX }
+  // Buttons, links and the chord/player areas handle their own taps and drags; a stray
+  // pointerup landing back on the root (common on mobile touch) must not read as a swipe.
+  function isSwipeable(target: EventTarget | null): boolean {
+    return !(target instanceof Element && target.closest('button, a, input, select, .stage__chords, .stage__chordbar, .mp3'))
+  }
+  function onPointerDown(e: PointerEvent) { x0.current = isSwipeable(e.target) ? e.clientX : null }
   function onPointerUp(e: PointerEvent) {
     if (x0.current == null) return
     const dx = e.clientX - x0.current
@@ -158,7 +163,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             <div className="stage__titlerow">
               <h1>{cur.stageTitle}</h1>
               {cur.chordSheet && (
-                <button type="button" className="stage__chordtoggle" onPointerDown={(e) => e.stopPropagation()}
+                <button type="button" className="stage__chordtoggle"
                   onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
                   {showChords ? 'Hide chords' : 'Chords'}
                 </button>
@@ -167,7 +172,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
             {showChords && cur.chordSheet ? (
               <>
-                <div className="stage__chordbar" onPointerDown={(e) => e.stopPropagation()}>
+                <div className="stage__chordbar">
                   <span className="stage__label">TRANSPOSE (THIS SCREEN ONLY)</span>
                   <div className="stepper">
                     <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
@@ -176,7 +181,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   </div>
                   {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
                 </div>
-                <pre className="stage__chords" onPointerDown={(e) => e.stopPropagation()}>
+                <pre className="stage__chords">
                   {chordTranspose ? transposeChordSheet(cur.chordSheet, chordTranspose) : cur.chordSheet}
                 </pre>
               </>
@@ -201,27 +206,26 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             )}
             {cur.youtubeId && (
               showVideo ? (
-                <div onPointerDown={(e) => e.stopPropagation()}>
+                <div>
                   <SongPlayer youtubeId={showVideo === 2 && cur.youtubeId2 ? cur.youtubeId2 : cur.youtubeId} title={cur.title} artist={cur.artist} />
                   {cur.youtubeId2 && (
                     <div className="stage__ytrow" style={{ marginTop: 8 }}>
                       <button type="button" className={'stage__yt' + (showVideo !== 2 ? ' stage__yt--play' : '')}
-                        onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowVideo(1)}>Song 1</button>
+                        onClick={() => setShowVideo(1)}>Song 1</button>
                       <button type="button" className={'stage__yt' + (showVideo === 2 ? ' stage__yt--play' : '')}
-                        onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowVideo(2)}>Song 2</button>
+                        onClick={() => setShowVideo(2)}>Song 2</button>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="stage__ytrow">
-                  <button type="button" className="stage__yt stage__yt--play" onPointerDown={(e) => e.stopPropagation()}
+                  <button type="button" className="stage__yt stage__yt--play"
                     onClick={() => setShowVideo(1)}>▶ Play here{cur.youtubeId2 ? ' (song 1)' : ''}</button>
                   {cur.youtubeId2 && (
-                    <button type="button" className="stage__yt stage__yt--play" onPointerDown={(e) => e.stopPropagation()}
+                    <button type="button" className="stage__yt stage__yt--play"
                       onClick={() => setShowVideo(2)}>▶ Song 2</button>
                   )}
-                  <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer"
-                    onPointerDown={(e) => e.stopPropagation()}>Open in YouTube</a>
+                  <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer">Open in YouTube</a>
                 </div>
               )
             )}
@@ -232,13 +236,13 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
 
         <footer className="stage__foot">
           {offLive && (
-            <button className="stage__backlive" onPointerDown={(e) => e.stopPropagation()}
+            <button className="stage__backlive"
               onClick={() => { direction.current = liveIndex > index ? 1 : -1; setIndex(liveIndex) }}>
               ↻ Back to live · {list[liveIndex]?.stageTitle}
             </button>
           )}
           {next ? (
-            <button className="stage__next" onClick={() => go(1)} onPointerDown={(e) => e.stopPropagation()}>
+            <button className="stage__next" onClick={() => go(1)}>
               <div>
                 <span className="stage__label">NEXT · {String(next.number).padStart(2, '0')}{next.sessionName !== cur?.sessionName ? ` · ${next.sessionName.toUpperCase()}` : ''}</span>
                 <b>{next.stageTitle}</b>
@@ -250,7 +254,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             <div className="stage__last">Last song of the night — thank you{show.venue ? `, ${show.venue}` : ''}.</div>
           ) : null}
           <div className="stage__nav">
-            <button onClick={() => go(-1)} disabled={index === 0} onPointerDown={(e) => e.stopPropagation()}>← PREV</button>
+            <button onClick={() => go(-1)} disabled={index === 0}>← PREV</button>
             <span>{synced && !canControl ? 'SWIPE TO BROWSE · SYNCS WHEN THE SONG CHANGES' : 'SWIPE LEFT TO ADVANCE'}</span>
           </div>
         </footer>
