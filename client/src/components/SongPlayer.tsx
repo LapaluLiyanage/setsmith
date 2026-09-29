@@ -42,7 +42,11 @@ export function SongPlayer({ youtubeId, title, artist }: Props) {
             setDuration(e.target.getDuration())
             e.target.playVideo()
           },
-          onStateChange: (e) => setPlaying(e.data === window.YT!.PlayerState.PLAYING),
+          onStateChange: (e) => {
+            const isPlaying = e.data === window.YT!.PlayerState.PLAYING
+            setPlaying(isPlaying)
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
+          },
         },
       })
       poll = setInterval(() => {
@@ -57,6 +61,22 @@ export function SongPlayer({ youtubeId, title, artist }: Props) {
       playerRef.current = null
     }
   }, [youtubeId])
+
+  // Tell the OS this is real media playback (title, artwork, lock-screen/notification controls) --
+  // without this, mobile browsers are much quicker to pause a hidden video iframe once the app
+  // is backgrounded or the screen locks, since it looks like inactive page content, not music.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title, artist, artwork: [{ src: thumbUrl(youtubeId), sizes: '320x180', type: 'image/jpeg' }],
+    })
+    navigator.mediaSession.setActionHandler('play', () => playerRef.current?.playVideo())
+    navigator.mediaSession.setActionHandler('pause', () => playerRef.current?.pauseVideo())
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null)
+      navigator.mediaSession.setActionHandler('pause', null)
+    }
+  }, [youtubeId, title, artist])
 
   function toggle() {
     if (!playerRef.current) return
