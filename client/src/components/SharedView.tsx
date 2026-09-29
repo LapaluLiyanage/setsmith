@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { transposeChordSheet } from '../lib/chordSheet'
 import { buildExport, formatShowDate, pdfFileName } from '../lib/exportData'
 import { buildStageList } from '../lib/stage'
 import { supabase } from '../lib/supabase'
@@ -21,6 +22,7 @@ export function SharedView({ token }: { token: string }) {
   const [shared, setShared] = useState<Shared | null | undefined>(undefined)
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null)
   const [showChords, setShowChords] = useState(false)
+  const [chordTranspose, setChordTranspose] = useState(0)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function SharedView({ token }: { token: string }) {
     ? stageList.find((s) => s.itemId === nowPlaying?.itemId)
     : undefined
 
-  useEffect(() => { setShowChords(false) }, [current?.itemId])
+  useEffect(() => { setShowChords(false); setChordTranspose(0) }, [current?.itemId])
 
   async function download() {
     if (!data) return
@@ -121,7 +123,20 @@ export function SharedView({ token }: { token: string }) {
               </button>
             )}
           </div>
-          {showChords && current.chordSheet && <pre className="shared__chords">{current.chordSheet}</pre>}
+          {showChords && current.chordSheet && (
+            <>
+              <div className="shared__actions">
+                <span className="muted" style={{ fontSize: 12 }}>Transpose (this screen only)</span>
+                <div className="stepper">
+                  <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
+                  <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
+                  <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                </div>
+                {chordTranspose !== 0 && <button type="button" className="pill" onClick={() => setChordTranspose(0)}>Reset</button>}
+              </div>
+              <pre className="shared__chords">{chordTranspose ? transposeChordSheet(current.chordSheet, chordTranspose) : current.chordSheet}</pre>
+            </>
+          )}
           {current.youtubeId && <SongPlayer youtubeId={current.youtubeId} title={current.youtubeId2 ? `${current.title} — song 1` : current.title} artist={current.artist} />}
           {current.youtubeId2 && <SongPlayer youtubeId={current.youtubeId2} title={`${current.title} — song 2`} artist={current.artist} />}
         </section>

@@ -307,6 +307,10 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .stage__chordtoggle { flex: none; height: 34px; padding: 0 14px; border-radius: 17px; background: #161715; border: 1px solid #2a2b28; color: #e2f24a; font: 600 12px var(--mono); letter-spacing: .04em; }
 .stage__chordtoggle[aria-pressed="true"] { background: #e2f24a; color: #111; border-color: #e2f24a; }
+.stage__chordbar { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.stage .stepper { height: 34px; grid-template-columns: 34px 1fr 34px; border-color: #2a2b28; background: #161715; }
+.stage .stepper button { color: #f4f4ef; }
+.stage .stepper span { border-inline-color: #2a2b28; color: #f4f4ef; min-width: 28px; }
 .stage__chords {
   flex: 1; min-width: 0; min-height: 0; margin: 0; padding: 18px; border-radius: 22px; background: #161715;
   overflow: auto; -webkit-overflow-scrolling: touch; white-space: pre; font: 600 16px/1.6 var(--mono); color: #f4f4ef;

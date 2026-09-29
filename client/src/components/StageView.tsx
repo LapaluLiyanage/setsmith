@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { reducedMotion } from '../lib/motion'
+import { transposeChordSheet } from '../lib/chordSheet'
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
@@ -45,6 +46,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
+  const [chordTranspose, setChordTranspose] = useState(0)
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const direction = useRef(1)
   const x0 = useRef<number | null>(null)
@@ -99,8 +101,8 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     return () => ctx.revert()
   }, [])
 
-  // Stop any playing video when the song changes, so it doesn't keep playing underneath.
-  useEffect(() => { setShowVideo(0) }, [index])
+  // Stop any playing video, and reset the local chord transpose, when the song changes.
+  useEffect(() => { setShowVideo(0); setChordTranspose(0) }, [index])
 
   // New song slides in from the side you swiped towards.
   useLayoutEffect(() => {
@@ -164,7 +166,20 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
             {showChords && cur.chordSheet ? (
-              <pre className="stage__chords" onPointerDown={(e) => e.stopPropagation()}>{cur.chordSheet}</pre>
+              <>
+                <div className="stage__chordbar" onPointerDown={(e) => e.stopPropagation()}>
+                  <span className="stage__label">TRANSPOSE (THIS SCREEN ONLY)</span>
+                  <div className="stepper">
+                    <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
+                    <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
+                    <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                  </div>
+                  {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
+                </div>
+                <pre className="stage__chords" onPointerDown={(e) => e.stopPropagation()}>
+                  {chordTranspose ? transposeChordSheet(cur.chordSheet, chordTranspose) : cur.chordSheet}
+                </pre>
+              </>
             ) : (
               <div className="stage__grid">
                 <div className="stage__card stage__card--wide">
