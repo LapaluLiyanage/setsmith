@@ -135,6 +135,9 @@ export function SessionColumn({ session, index, songs, members, startSec, select
               const song = songs[item.songId]
               if (!song) return null
               const warning = i > 0 ? warningFor(i) : null
+              const partKey = `${item.id}::2`
+              const playingPart: 0 | 1 | 2 = playingId === item.id ? 1 : playingId === partKey ? 2 : 0
+              const playingVideo = playingPart === 2 ? song.youtubeId2 : song.youtubeId
               return (
                 <Fragment key={item.id}>
                   {warning && <li className="warn" role="note"><b>!</b>{warning}</li>}
@@ -144,8 +147,8 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                     position={i + 1}
                     members={members}
                     selected={selectedId === item.id}
-                    playing={playingId === item.id}
-                    onPlay={() => onPlay(item.id)}
+                    playing={playingPart}
+                    onPlay={(part) => onPlay(part === 2 ? partKey : item.id)}
                     onTap={() => onTap(item.id)}
                     onEdit={() => onEditItem(item.id)}
                     onSinger={(singerId) => {
@@ -153,9 +156,9 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                       notify(singerId ? `${singerBadge(members, singerId).name} now sings “${song.title}”` : `“${song.title}” has no singer`)
                     }}
                   />
-                  {playingId === item.id && song.youtubeId && (
+                  {playingPart !== 0 && playingVideo && (
                     <li className="songs__player">
-                      <SongPlayer youtubeId={song.youtubeId} title={song.title} artist={song.artist} />
+                      <SongPlayer youtubeId={playingVideo} title={song.title} artist={song.artist} />
                     </li>
                   )}
                 </Fragment>

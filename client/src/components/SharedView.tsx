@@ -122,7 +122,8 @@ export function SharedView({ token }: { token: string }) {
             )}
           </div>
           {showChords && current.chordSheet && <pre className="shared__chords">{current.chordSheet}</pre>}
-          {current.youtubeId && <SongPlayer youtubeId={current.youtubeId} title={current.title} artist={current.artist} />}
+          {current.youtubeId && <SongPlayer youtubeId={current.youtubeId} title={current.youtubeId2 ? `${current.title} — song 1` : current.title} artist={current.artist} />}
+          {current.youtubeId2 && <SongPlayer youtubeId={current.youtubeId2} title={`${current.title} — song 2`} artist={current.artist} />}
         </section>
       )}
 

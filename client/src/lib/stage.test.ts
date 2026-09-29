@@ -37,6 +37,13 @@ describe('buildStageList', () => {
     expect(list2[0]).toMatchObject({ title: 'Perfect', stageTitle: 'Perfect (short)' })
     expect(list2[1]).toMatchObject({ title: 'Mal Mitak Thiyanna', stageTitle: 'Mal Mitak Thiyanna' })
   })
+
+  it('carries a mashup\'s second video through, defaulting to null', () => {
+    const songs = { ...sampleState.songs, perfect: { ...sampleState.songs.perfect, youtubeId2: 'second-vid' } }
+    const list2 = buildStageList(show, songs, sampleState.members)
+    expect(list2[0].youtubeId2).toBe('second-vid')
+    expect(list2[1].youtubeId2).toBeNull()
+  })
 })
 
 describe('beatSeconds', () => {

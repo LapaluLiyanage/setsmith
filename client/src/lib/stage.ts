@@ -26,6 +26,8 @@ export interface StageSong {
   duration: string
   notes: string
   youtubeId: string | null
+  /** Second video for a mashup; null for a regular song. */
+  youtubeId2: string | null
   /** Song's chord sheet, transposed for this slot; null when the song has none. */
   chordSheet: string | null
 }
@@ -59,6 +61,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         duration: song.durationSec ? formatDuration(song.durationSec) : '',
         notes: item.notes,
         youtubeId: song.youtubeId,
+        youtubeId2: song.youtubeId2 ?? null,
         chordSheet: song.chordSheet ? transposeChordSheet(song.chordSheet, item.transpose) : null,
       })
     })

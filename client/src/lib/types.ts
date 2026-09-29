@@ -36,6 +36,8 @@ export interface Song {
   chordSheet?: string | null
   /** Shorter title for Stage view's big display, e.g. dropping "(feat. ...)" or a long subtitle. Falls back to title. */
   shortTitle?: string | null
+  /** Second video for a mashup of two songs; youtubeId stays the first. Both stay independently playable. */
+  youtubeId2?: string | null
 }
 
 /** One slot in a session's running order. */

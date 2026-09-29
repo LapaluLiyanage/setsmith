@@ -47,9 +47,11 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<VideoInfo[]>([])
   const [isMashup, setIsMashup] = useState(false)
-  const [mashupFirst, setMashupFirst] = useState<VideoInfo | null>(null)
+  const [pickSlot, setPickSlot] = useState<'primary' | 'secondary'>('primary')
   const [youtubeId, setYoutubeId] = useState<string | null>(existing?.song.youtubeId ?? null)
+  const [youtubeId2, setYoutubeId2] = useState<string | null>(existing?.song.youtubeId2 ?? null)
   const [channel, setChannel] = useState('')
+  const [channel2, setChannel2] = useState('')
   const [title, setTitle] = useState(existing?.song.title ?? '')
   const [shortTitle, setShortTitle] = useState(existing?.song.shortTitle ?? '')
   const [artist, setArtist] = useState(existing?.song.artist ?? '')
@@ -90,24 +92,15 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const cleanChannel = (channelName: string) => channelName.replace(/(VEVO| - Topic)$/i, '').trim()
 
   function pick(v: VideoInfo) {
-    if (isMashup && !mashupFirst) {
-      setMashupFirst(v)
-      setQuery('')
+    if (pickSlot === 'secondary') {
+      setYoutubeId2(v.youtubeId)
+      setChannel2(v.channel)
+      setTitle((t) => (t ? `${t} / ${v.title}` : v.title))
+      setArtist((a) => (a ? `${a} / ${cleanChannel(v.channel)}` : cleanChannel(v.channel)))
+      if (v.durationSec) setDuration((d) => toClock(fromClock(d) + (v.durationSec ?? 0)))
       setResults([])
       setStatus(null)
-      return
-    }
-    if (isMashup && mashupFirst) {
-      const first = mashupFirst
-      setYoutubeId(first.youtubeId)
-      setChannel(first.channel)
-      setTitle(`${first.title} / ${v.title}`)
-      setArtist(`${cleanChannel(first.channel)} / ${cleanChannel(v.channel)}`)
-      const totalSec = (first.durationSec ?? 0) + (v.durationSec ?? 0)
-      if (totalSec) setDuration(toClock(totalSec))
-      setMashupFirst(null)
-      setResults([])
-      setStatus(null)
+      setPickSlot('primary')
       setPhase('details')
       return
     }
@@ -118,7 +111,12 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
     if (v.durationSec) setDuration(toClock(v.durationSec))
     setResults([])
     setStatus(null)
-    setPhase('details')
+    if (isMashup && !youtubeId2) {
+      setPickSlot('secondary')
+      setStatus(`First song: “${v.title}”. Now search for the second song.`)
+    } else {
+      setPhase('details')
+    }
   }
 
   async function onSearch() {
@@ -178,6 +176,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       shortTitle: shortTitle.trim() ? shortTitle.trim() : null,
       artist: artist.trim(),
       youtubeId,
+      youtubeId2,
       durationSec: fromClock(duration),
       bpm: bpm ? Math.round(Number(bpm)) : null,
       key: valueToKey(keyValue),
@@ -218,19 +217,15 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
         <form id="song-form" ref={bodyRef} className="drawer__body" onSubmit={onSubmit}>
           {phase === 'search' && (
             <>
-              {target.mode === 'add' && (
+              {target.mode === 'add' && pickSlot === 'primary' && !youtubeId && (
                 <label className="check">
                   <input type="checkbox" checked={isMashup}
-                    onChange={(e) => { setIsMashup(e.target.checked); setMashupFirst(null); setQuery(''); setResults([]); setStatus(null) }} />
+                    onChange={(e) => { setIsMashup(e.target.checked); setQuery(''); setResults([]); setStatus(null) }} />
                   This is a mashup of two songs
                 </label>
               )}
-              {isMashup && (
-                <p className="status" role="status">
-                  {mashupFirst
-                    ? <>First song: <b>{mashupFirst.title}</b> — now search for the second song.</>
-                    : 'Search and pick the first song.'}
-                </p>
+              {pickSlot === 'secondary' && (
+                <p className="status" role="status">Searching for the second song{title ? ` to add to “${title}”` : ''}.</p>
               )}
               <div className="search">
                 <b>YT</b>
@@ -254,7 +249,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                 </div>
               )}
               <button type="button" className="pill pill--ghost" style={{ alignSelf: 'flex-start' }}
-                onClick={() => { if (!title && query && !parseYouTubeId(query)) setTitle(query); setStatus(null); setPhase('details') }}>
+                onClick={() => { if (!title && query && !parseYouTubeId(query)) setTitle(query); setStatus(null); setPickSlot('primary'); setPhase('details') }}>
                 Enter details by hand instead
               </button>
             </>
@@ -265,11 +260,29 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
               <div className="picked">
                 {youtubeId ? <img src={thumbUrl(youtubeId)} alt="" /> : <span className="ph" />}
                 <div>
-                  <b>{youtubeId ? (title || 'Linked video') : 'No YouTube link'}</b>
+                  <b>{youtubeId ? (youtubeId2 ? 'Song 1' : title || 'Linked video') : 'No YouTube link'}</b>
                   <span className="muted">{youtubeId ? [channel, duration].filter(Boolean).join(' · ') || youtubeId : 'Band members won’t have a video to listen to'}</span>
                 </div>
-                <button type="button" className="pill" onClick={() => { setQuery(''); setPhase('search') }}>{youtubeId ? 'Change' : 'Add link'}</button>
+                <button type="button" className="pill" onClick={() => { setPickSlot('primary'); setQuery(''); setPhase('search') }}>
+                  {youtubeId ? 'Change' : 'Add link'}
+                </button>
               </div>
+
+              {youtubeId2 ? (
+                <div className="picked">
+                  <img src={thumbUrl(youtubeId2)} alt="" />
+                  <div>
+                    <b>Song 2</b>
+                    <span className="muted">{channel2 || youtubeId2}</span>
+                  </div>
+                  <button type="button" className="pill" onClick={() => { setPickSlot('secondary'); setQuery(''); setPhase('search') }}>Change</button>
+                </div>
+              ) : (
+                <button type="button" className="pill pill--ghost" style={{ alignSelf: 'flex-start' }}
+                  onClick={() => { setPickSlot('secondary'); setQuery(''); setPhase('search') }}>
+                  + Add a second video (make this a mashup)
+                </button>
+              )}
 
               <div className="grid-2">
                 <label className="field"><span className="eyebrow">Title</span>

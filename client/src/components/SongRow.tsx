@@ -13,8 +13,8 @@ interface Props {
   position: number
   members: Member[]
   selected: boolean
-  playing: boolean
-  onPlay: () => void
+  playing: 0 | 1 | 2
+  onPlay: (part: 1 | 2) => void
   onTap: () => void
   onEdit: () => void
   onSinger: (singerId: string | null) => void
@@ -106,10 +106,19 @@ export function SongRow({ item, song, position, members, selected, playing, onPl
       <div className="song__side">
         <span className="song__dur">{formatDuration(song.durationSec)}</span>
         <div className="song__actions">
-          {song.youtubeId ? (
-            <button type="button" className={`icon-btn${playing ? ' icon-btn--dark' : ''}`} aria-pressed={playing}
+          {song.youtubeId2 ? (
+            <>
+              <button type="button" className={`icon-btn${playing === 1 ? ' icon-btn--dark' : ''}`} aria-pressed={playing === 1}
+                title={playing === 1 ? 'Stop' : 'Play song 1'} aria-label={`${playing === 1 ? 'Stop' : 'Play'} song 1 of ${song.title}`}
+                onClick={(e) => { stop(e); onPlay(1) }}>{playing === 1 ? '■' : '▶1'}</button>
+              <button type="button" className={`icon-btn${playing === 2 ? ' icon-btn--dark' : ''}`} aria-pressed={playing === 2}
+                title={playing === 2 ? 'Stop' : 'Play song 2'} aria-label={`${playing === 2 ? 'Stop' : 'Play'} song 2 of ${song.title}`}
+                onClick={(e) => { stop(e); onPlay(2) }}>{playing === 2 ? '■' : '▶2'}</button>
+            </>
+          ) : song.youtubeId ? (
+            <button type="button" className={`icon-btn${playing ? ' icon-btn--dark' : ''}`} aria-pressed={!!playing}
               title={playing ? 'Stop' : 'Play here'} aria-label={`${playing ? 'Stop' : 'Play'} ${song.title}`}
-              onClick={(e) => { stop(e); onPlay() }}>{playing ? '■' : '▶'}</button>
+              onClick={(e) => { stop(e); onPlay(1) }}>{playing ? '■' : '▶'}</button>
           ) : (
             <a className="icon-btn" title="Search YouTube" aria-label={`Search ${song.title} on YouTube`} target="_blank" rel="noreferrer"
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`} onClick={stop}>▶</a>

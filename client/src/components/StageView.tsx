@@ -45,7 +45,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
-  const [showVideo, setShowVideo] = useState(false)
+  const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const direction = useRef(1)
   const x0 = useRef<number | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -100,7 +100,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video when the song changes, so it doesn't keep playing underneath.
-  useEffect(() => { setShowVideo(false) }, [index])
+  useEffect(() => { setShowVideo(0) }, [index])
 
   // New song slides in from the side you swiped towards.
   useLayoutEffect(() => {
@@ -187,12 +187,24 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             {cur.youtubeId && (
               showVideo ? (
                 <div onPointerDown={(e) => e.stopPropagation()}>
-                  <SongPlayer youtubeId={cur.youtubeId} title={cur.title} artist={cur.artist} />
+                  <SongPlayer youtubeId={showVideo === 2 && cur.youtubeId2 ? cur.youtubeId2 : cur.youtubeId} title={cur.title} artist={cur.artist} />
+                  {cur.youtubeId2 && (
+                    <div className="stage__ytrow" style={{ marginTop: 8 }}>
+                      <button type="button" className={'stage__yt' + (showVideo !== 2 ? ' stage__yt--play' : '')}
+                        onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowVideo(1)}>Song 1</button>
+                      <button type="button" className={'stage__yt' + (showVideo === 2 ? ' stage__yt--play' : '')}
+                        onPointerDown={(e) => e.stopPropagation()} onClick={() => setShowVideo(2)}>Song 2</button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="stage__ytrow">
                   <button type="button" className="stage__yt stage__yt--play" onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setShowVideo(true)}>▶ Play here</button>
+                    onClick={() => setShowVideo(1)}>▶ Play here{cur.youtubeId2 ? ' (song 1)' : ''}</button>
+                  {cur.youtubeId2 && (
+                    <button type="button" className="stage__yt stage__yt--play" onPointerDown={(e) => e.stopPropagation()}
+                      onClick={() => setShowVideo(2)}>▶ Song 2</button>
+                  )}
                   <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer"
                     onPointerDown={(e) => e.stopPropagation()}>Open in YouTube</a>
                 </div>
