@@ -41,6 +41,16 @@ describe('isChordLine', () => {
   it('rejects a blank line', () => {
     expect(isChordLine('   ')).toBe(false)
   })
+
+  it('accepts a chord line with a leading section label', () => {
+    expect(isChordLine('Intro: G D Em C')).toBe(true)
+    expect(isChordLine('Interlude:')).toBe(false) // label with no chords isn't a chord line
+  })
+
+  it('accepts bar separators and repeat counts alongside chords', () => {
+    expect(isChordLine('| G | D | Em | C |')).toBe(true)
+    expect(isChordLine('G D x4')).toBe(true)
+  })
 })
 
 describe('transposeChordSheet', () => {
@@ -58,5 +68,16 @@ describe('transposeChordSheet', () => {
 
   it('handles a missing sheet', () => {
     expect(transposeChordSheet('', 3)).toBe('')
+  })
+
+  it('transposes an intro/interlude line, keeping the label and repeat count as-is', () => {
+    const withIntro = 'Intro: G D Em C x2\nAmazing grace how sweet\nEm          C\nthat saved a wretch like me'
+    expect(transposeChordSheet(withIntro, 2)).toBe(
+      'Intro: A E F♯m D x2\nAmazing grace how sweet\nF♯m          D\nthat saved a wretch like me',
+    )
+  })
+
+  it('transposes chords inside bar separators', () => {
+    expect(transposeChordSheet('| G | D | Em | C |', 2)).toBe('| A | E | F♯m | D |')
   })
 })

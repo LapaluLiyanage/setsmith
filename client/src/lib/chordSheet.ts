@@ -7,6 +7,11 @@ const QUALITY =
 
 const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(?:/([A-G])([#b♯♭]?))?$`)
 
+/** A section label like "Intro:" at the start of a line, kept as-is. */
+const LABEL_RE = /^[A-Za-z]+:$/
+/** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", kept as-is. */
+const DECORATION_RE = /^(x\d+|×\d+|\|+|-{2,})$/i
+
 function shiftNote(letter: string, accidental: string, semitones: number): string {
   const key = (letter + accidental).toUpperCase().replace('♯', '#').replace('♭', 'b')
   const idx = NOTE_ALIASES[key]
@@ -25,13 +30,18 @@ export function transposeChord(token: string, semitones: number): string {
   return root + quality + (bass ? `/${bass}` : '')
 }
 
-/** True when every token on the line is a recognised chord (a ChordPro-style chord line, not lyrics). */
+/** True when the line is a ChordPro-style chord line (allowing a leading section label like
+ * "Intro:", and bar/repeat marks like "|" or "x4"), rather than lyrics. */
 export function isChordLine(line: string): boolean {
   const tokens = line.trim().split(/\s+/).filter(Boolean)
-  return tokens.length > 0 && tokens.every((t) => CHORD_RE.test(t))
+  if (tokens.length === 0) return false
+  const body = LABEL_RE.test(tokens[0]) ? tokens.slice(1) : tokens
+  return body.length > 0
+    && body.some((t) => CHORD_RE.test(t))
+    && body.every((t) => CHORD_RE.test(t) || DECORATION_RE.test(t))
 }
 
-/** Transpose a chord sheet: chord-only lines get every token shifted; lyric lines pass through untouched. */
+/** Transpose a chord sheet: chords on chord lines are shifted (labels, bars and repeat counts pass through); lyric lines are untouched. */
 export function transposeChordSheet(sheet: string, semitones: number): string {
   if (!sheet || semitones === 0) return sheet
   return sheet
