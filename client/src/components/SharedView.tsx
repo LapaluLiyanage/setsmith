@@ -112,7 +112,7 @@ export function SharedView({ token }: { token: string }) {
       {current && (
         <section className="shared__live">
           <span className="eyebrow">● NOW PLAYING</span>
-          <h2>{current.title}</h2>
+          <h2>{current.stageTitle}</h2>
           <p className="muted">{[current.artist, current.singer.name, current.key, current.bpm && `${current.bpm} bpm`].filter(Boolean).join(' · ')}</p>
           <div className="shared__actions">
             {current.chordSheet && (

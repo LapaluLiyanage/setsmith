@@ -154,7 +154,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           <div ref={currentRef} className="stage__now" aria-live="polite">
             <div className="stage__beat"><span className="stage__dot-wrap"><i ref={beatRef} /></span>NOW · {String(cur.number).padStart(2, '0')}</div>
             <div className="stage__titlerow">
-              <h1>{cur.title}</h1>
+              <h1>{cur.stageTitle}</h1>
               {cur.chordSheet && (
                 <button type="button" className="stage__chordtoggle" onPointerDown={(e) => e.stopPropagation()}
                   onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
@@ -207,14 +207,14 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           {offLive && (
             <button className="stage__backlive" onPointerDown={(e) => e.stopPropagation()}
               onClick={() => { direction.current = liveIndex > index ? 1 : -1; setIndex(liveIndex) }}>
-              ↻ Back to live · {list[liveIndex]?.title}
+              ↻ Back to live · {list[liveIndex]?.stageTitle}
             </button>
           )}
           {next ? (
             <button className="stage__next" onClick={() => go(1)} onPointerDown={(e) => e.stopPropagation()}>
               <div>
                 <span className="stage__label">NEXT · {String(next.number).padStart(2, '0')}{next.sessionName !== cur?.sessionName ? ` · ${next.sessionName.toUpperCase()}` : ''}</span>
-                <b>{next.title}</b>
+                <b>{next.stageTitle}</b>
                 <span className="stage__meta">{[next.singer.name, next.key?.replace(' major', '').replace(' minor', 'm'), next.bpm && `${next.bpm} bpm`].filter(Boolean).join(' · ')}</span>
               </div>
               <i>→</i>

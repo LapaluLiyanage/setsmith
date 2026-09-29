@@ -13,6 +13,8 @@ export interface StageSong {
   inSession: number
   sessionSize: number
   title: string
+  /** Shorter title for the big Stage view display; falls back to the full title. */
+  stageTitle: string
   artist: string
   singer: SingerBadge
   /** Key the band plays (after transpose), e.g. "G major". */
@@ -45,6 +47,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         inSession: i + 1,
         sessionSize: items.length,
         title: song.title,
+        stageTitle: song.shortTitle?.trim() || song.title,
         artist: song.artist,
         singer: singerBadge(members, item.singerId),
         key: played ? formatKey(played) : null,

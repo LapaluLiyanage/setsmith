@@ -49,6 +49,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [youtubeId, setYoutubeId] = useState<string | null>(existing?.song.youtubeId ?? null)
   const [channel, setChannel] = useState('')
   const [title, setTitle] = useState(existing?.song.title ?? '')
+  const [shortTitle, setShortTitle] = useState(existing?.song.shortTitle ?? '')
   const [artist, setArtist] = useState(existing?.song.artist ?? '')
   const [duration, setDuration] = useState(toClock(existing?.song.durationSec ?? null))
   const [singerId, setSingerId] = useState<string | null>(existing?.item.singerId ?? null)
@@ -149,6 +150,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
     if (!title.trim()) return setStatus('The song needs a title.')
     const songFields = {
       title: title.trim(),
+      shortTitle: shortTitle.trim() ? shortTitle.trim() : null,
       artist: artist.trim(),
       youtubeId,
       durationSec: fromClock(duration),
@@ -236,6 +238,11 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                 <label className="field"><span className="eyebrow">Original artist</span>
                   <input id="song-artist" value={artist} onChange={(e) => setArtist(e.target.value)} /></label>
               </div>
+
+              <label className="field"><span className="eyebrow">Short name for Stage view (optional)</span>
+                <input id="song-short-title" value={shortTitle} onChange={(e) => setShortTitle(e.target.value)}
+                  placeholder={title || 'Shown big on stage — leave blank to use the full title'} />
+              </label>
 
               <div className="field">
                 <span className="eyebrow">Singer</span>

@@ -30,6 +30,13 @@ describe('buildStageList', () => {
     const [song] = buildStageList(t, sampleState.songs, sampleState.members)
     expect(song).toMatchObject({ key: 'G major', camelot: '9B', transposeNote: 'play in G (−2)' })
   })
+
+  it('uses shortTitle for stageTitle when set, otherwise falls back to the full title', () => {
+    const songs = { ...sampleState.songs, perfect: { ...sampleState.songs.perfect, shortTitle: 'Perfect (short)' } }
+    const list2 = buildStageList(show, songs, sampleState.members)
+    expect(list2[0]).toMatchObject({ title: 'Perfect', stageTitle: 'Perfect (short)' })
+    expect(list2[1]).toMatchObject({ title: 'Mal Mitak Thiyanna', stageTitle: 'Mal Mitak Thiyanna' })
+  })
 })
 
 describe('beatSeconds', () => {

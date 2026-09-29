@@ -34,6 +34,8 @@ export interface Song {
   lang?: Lang
   /** ChordPro-style: a chord line above each lyric line. Transposed per setlist item for Stage view. */
   chordSheet?: string | null
+  /** Shorter title for Stage view's big display, e.g. dropping "(feat. ...)" or a long subtitle. Falls back to title. */
+  shortTitle?: string | null
 }
 
 /** One slot in a session's running order. */
