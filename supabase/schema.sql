@@ -38,6 +38,9 @@ create table invites (
   code text primary key default encode(gen_random_bytes(9), 'hex'),
   band_id uuid not null references bands(id) on delete cascade,
   role band_role not null default 'viewer' check (role <> 'manager'),
+  -- A reusable invite (e.g. a group viewer link) is never marked used, so anyone with the link
+  -- can redeem it, any number of times.
+  reusable boolean not null default false,
   created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null default now() + interval '14 days',
@@ -45,6 +48,7 @@ create table invites (
   used_at timestamptz
 );
 create index on invites (band_id);
+create unique index invites_reusable_slot on invites (band_id, role) where reusable;
 
 -- Read-only public links, one per show. Served through get_shared(), never by table access.
 create table shares (
@@ -166,13 +170,15 @@ declare
 begin
   if uid is null then raise exception 'not signed in'; end if;
   select * into inv from invites where code = p_code for update;
-  if not found or inv.used_by is not null or inv.expires_at < now() then
+  if not found or (not inv.reusable and inv.used_by is not null) or inv.expires_at < now() then
     raise exception 'invite is invalid or expired';
   end if;
   insert into band_access (band_id, user_id, role)
     values (inv.band_id, uid, inv.role)
     on conflict (band_id, user_id) do nothing;
-  update invites set used_by = uid, used_at = now() where code = p_code;
+  if not inv.reusable then
+    update invites set used_by = uid, used_at = now() where code = p_code;
+  end if;
   return inv.band_id;
 end $$;
 

@@ -12,6 +12,7 @@ export function CloudSection({ show }: { show: Show | null }) {
   const [inviteRole, setInviteRole] = useState<Exclude<Role, 'manager'>>('editor')
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [shareToken, setShareToken] = useState<string | null>(null)
+  const [groupCode, setGroupCode] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const isManager = cloud.role === 'manager'
   const bandId = cloud.band?.id
@@ -25,6 +26,15 @@ export function CloudSection({ show }: { show: Show | null }) {
       .then(({ data }) => !cancelled && setShareToken((data?.token as string | undefined) ?? null))
     return () => { cancelled = true }
   }, [bandId, showId, isManager])
+
+  useEffect(() => {
+    setGroupCode(null)
+    if (!supabase || !bandId || !isManager) return
+    let cancelled = false
+    supabase.from('invites').select('code').eq('band_id', bandId).eq('role', 'viewer').eq('reusable', true).maybeSingle()
+      .then(({ data }) => !cancelled && setGroupCode((data?.code as string | undefined) ?? null))
+    return () => { cancelled = true }
+  }, [bandId, isManager])
 
   if (!cloud.configured || cloud.gate !== 'app' || !cloud.band) return null
 
@@ -46,6 +56,24 @@ export function CloudSection({ show }: { show: Show | null }) {
     const url = link('invite', data.code as string)
     setInviteUrl(url)
     copy(url, 'Invite link')
+  }
+
+  async function createGroupLink() {
+    if (!supabase) return
+    const { data, error } = await supabase.from('invites')
+      .insert({ band_id: band.id, role: 'viewer', reusable: true, expires_at: new Date(Date.now() + 365 * 86400_000).toISOString() })
+      .select('code').single()
+    if (error) return setMsg(error.message)
+    setGroupCode(data.code as string)
+    copy(link('invite', data.code as string), 'Group viewer link')
+  }
+
+  async function revokeGroupLink() {
+    if (!supabase || !groupCode) return
+    const { error } = await supabase.from('invites').delete().eq('code', groupCode)
+    if (error) return setMsg(error.message)
+    setGroupCode(null)
+    setMsg('Group viewer link turned off.')
   }
 
   async function createShare() {
@@ -122,7 +150,26 @@ export function CloudSection({ show }: { show: Show | null }) {
             <button className="pill pill--accent" onClick={createInvite}>Create invite link</button>
           </div>
           {inviteUrl && <input readOnly value={inviteUrl} onFocus={(e) => e.target.select()} aria-label="Invite link" />}
-          <p className="muted" style={{ fontSize: 13 }}>One person, 14 days. They sign in, open the link and land in this band.</p>
+          <p className="muted" style={{ fontSize: 13 }}>
+            One person, 14 days. No account needed — they open the link, type their name, and land in this band.
+          </p>
+
+          <h4>Group viewer link</h4>
+          {groupCode ? (
+            <>
+              <input readOnly value={link('invite', groupCode)} onFocus={(e) => e.target.select()} aria-label="Group viewer link" />
+              <div className="member">
+                <button className="pill" onClick={() => copy(link('invite', groupCode), 'Group viewer link')}>Copy</button>
+                <button className="pill" onClick={revokeGroupLink}>Turn off</button>
+              </div>
+            </>
+          ) : (
+            <button className="pill" onClick={createGroupLink}>Create group viewer link</button>
+          )}
+          <p className="muted" style={{ fontSize: 13 }}>
+            One link for the whole band — anyone who opens it joins as a viewer (name only, no account),
+            and it keeps working for the next person too. Turn it off any time.
+          </p>
 
           <h4>Public link{show ? ` for “${show.name}”` : ''}</h4>
           {shareToken ? (
