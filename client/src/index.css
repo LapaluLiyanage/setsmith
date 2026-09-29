@@ -292,7 +292,7 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .empty h1 { font-size: 34px; letter-spacing: -.02em; margin: 0 0 8px; }
 
 /* Stage view — always dark, big type, for use on stage (design: "Stage View") */
-.stage { position: fixed; inset: 0; z-index: 60; background: #050505; color: #f4f4ef; overflow-y: auto; touch-action: pan-y; user-select: none;
+.stage { position: fixed; inset: 0; z-index: 60; background: #050505; color: #f4f4ef; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; user-select: none;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); color-scheme: dark; }
 .stage__col { max-width: 520px; min-height: 100%; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 16px 24px; }
 .stage__head { display: flex; align-items: center; gap: 10px; padding: 8px 4px 0; }
@@ -305,12 +305,15 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .stage__chordtoggle { flex: none; height: 34px; padding: 0 14px; border-radius: 17px; background: #161715; border: 1px solid #2a2b28; color: #e2f24a; font: 600 12px var(--mono); letter-spacing: .04em; }
 .stage__chordtoggle[aria-pressed="true"] { background: #e2f24a; color: #111; border-color: #e2f24a; }
-.stage__chords { flex: 1; margin: 0; padding: 18px; border-radius: 22px; background: #161715; overflow: auto; white-space: pre; font: 600 16px/1.6 var(--mono); color: #f4f4ef; }
+.stage__chords {
+  flex: 1; min-width: 0; min-height: 0; margin: 0; padding: 18px; border-radius: 22px; background: #161715;
+  overflow: auto; -webkit-overflow-scrolling: touch; white-space: pre; font: 600 16px/1.6 var(--mono); color: #f4f4ef;
+}
 .stage__bars { display: flex; gap: 4px; padding: 14px 4px 0; }
 .stage__bars i { flex: 1; height: 4px; border-radius: 2px; background: #222320; }
 .stage__bars i.done { background: #5a5c56; }
 .stage__bars i.now { background: #e2f24a; }
-.stage__now { padding: 32px 6px 0; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.stage__now { padding: 32px 6px 0; display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; min-width: 0; }
 .stage__beat { display: flex; align-items: center; gap: 12px; font: 600 16px var(--mono); letter-spacing: .06em; color: #e2f24a; }
 .stage__dot-wrap { width: 28px; height: 28px; display: grid; place-items: center; }
 .stage__dot-wrap i { width: 22px; height: 22px; border-radius: 50%; background: #e2f24a; }
@@ -386,6 +389,15 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
   .tap { width: 132px; justify-self: center; }
   .drawer { border-radius: 0; }
   .grid-2 { grid-template-columns: 1fr; }
+}
+/* Stage view on phones: chord sheets are wide (padded to line chords over lyrics), so give them
+   the full width and a smaller, tighter font rather than letting them force the page to scroll. */
+@media (max-width: 480px) {
+  .stage__col { padding: 8px 10px 20px; }
+  .stage h1 { font-size: clamp(34px, 12vw, 52px); }
+  .stage__chords { padding: 14px; font-size: 13px; line-height: 1.5; }
+  .stage__grid { gap: 6px; }
+  .stage__card { padding: 12px 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
