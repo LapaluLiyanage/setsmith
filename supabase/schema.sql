@@ -119,6 +119,9 @@ declare
   new_id uuid;
 begin
   if uid is null then raise exception 'not signed in'; end if;
+  if coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) then
+    raise exception 'create a real account to manage a band';
+  end if;
   insert into bands (name, created_by) values (p_name, uid) returning id into new_id;
   insert into band_access (band_id, user_id, role, display_name) values (new_id, uid, 'manager', p_display);
   insert into band_data (band_id, data, updated_by) values (new_id, p_data, uid);

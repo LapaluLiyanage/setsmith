@@ -9,6 +9,7 @@ import { historyReducer, signature, type Action, type HistoryState } from './red
 
 const BAND_KEY = 'setsmith:band'
 const INVITE_KEY = 'setsmith:invite'
+const PENDING_NAME_KEY = 'setsmith:pendingName'
 const SAVE_DELAY_MS = 700
 
 const emptyState = (): BandState => ({ bandName: 'My band', members: [], songs: {}, shows: [], activeShowId: null })
@@ -31,13 +32,14 @@ export interface BandInfo { id: string; name: string; role: Role }
 export interface AccessRow { userId: string; role: Role; displayName: string }
 export interface NowPlaying { showId: string; itemId: string }
 export type SyncStatus = 'saving' | 'saved' | 'error'
-export type Gate = 'app' | 'loading' | 'auth' | 'onboard' | 'unconfigured'
+export type Gate = 'app' | 'loading' | 'auth' | 'join' | 'onboard' | 'unconfigured'
 
 export interface Cloud {
   configured: boolean
   gate: Gate
   userId: string | null
   email: string | null
+  isAnonymous: boolean
   bands: BandInfo[]
   band: BandInfo | null
   role: Role | null
@@ -52,6 +54,7 @@ export interface Cloud {
   signOut: () => Promise<void>
   createBand: (name: string) => Promise<string | null>
   joinWithCode: (code: string) => Promise<string | null>
+  joinAnonymously: (name: string) => Promise<string | null>
   switchBand: (id: string) => void
   refreshAccess: () => Promise<void>
 }
@@ -90,6 +93,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [pendingInvite, setPendingInvite] = useState(() => lsGet(INVITE_KEY) !== null)
 
   const userId = session?.user.id ?? null
+  const isAnonymous = session?.user.is_anonymous ?? false
   const latest = useRef(history.present)
   latest.current = history.present
   const rev = useRef(0)
@@ -159,6 +163,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         else {
           setBandId(data as string)
           setNotice('You joined the band.')
+          const pendingName = lsGet(PENDING_NAME_KEY)
+          if (pendingName) {
+            lsSet(PENDING_NAME_KEY, null)
+            await supabase.rpc('set_display_name', { p_band: data as string, p_name: pendingName })
+          }
         }
       }
       await refreshBands()
@@ -300,6 +309,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const createBand = useCallback(async (name: string) => {
     if (!supabase || !session) return 'Sign in first.'
+    if (session.user.is_anonymous) return 'Create a real account to manage a band.'
     const clean = name.trim()
     if (!clean) return 'Give the band a name.'
     const fresh: BandState = { bandName: clean, members: [], songs: {}, shows: [], activeShowId: null }
@@ -322,6 +332,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return null
   }, [refreshBands])
 
+  const joinAnonymously = useCallback(async (name: string) => {
+    if (!supabase) return 'Not configured.'
+    const clean = name.trim()
+    if (!clean) return 'Enter your name.'
+    lsSet(PENDING_NAME_KEY, clean)
+    const { error } = await supabase.auth.signInAnonymously()
+    if (error) {
+      lsSet(PENDING_NAME_KEY, null)
+      return error.message
+    }
+    return null
+  }, [])
+
   const setNowPlaying = useCallback((showId: string, itemId: string) => {
     if (!supabase || !bandRole || readOnly) return
     setNowPlayingState({ showId, itemId })
@@ -334,16 +357,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   if (supabase) {
     gate = 'app'
     if (!authReady) gate = 'loading'
-    else if (!session) gate = 'auth'
+    else if (!session) gate = pendingInvite ? 'join' : 'auth'
     else if (bands === null) gate = 'loading'
     else if (bands.length === 0) gate = 'onboard'
     else if (!dataReady) gate = 'loading'
   }
 
   const cloud: Cloud = {
-    configured: !!supabase, gate, userId, email: session?.user.email ?? null, bands: bands ?? [], band, role, readOnly,
+    configured: !!supabase, gate, userId, email: session?.user.email ?? null, isAnonymous, bands: bands ?? [], band, role, readOnly,
     access, status, notice, pendingInvite, nowPlaying, setNowPlaying, dismissNotice: () => setNotice(null), signOut, createBand,
-    joinWithCode, switchBand: setBandId, refreshAccess,
+    joinWithCode, joinAnonymously, switchBand: setBandId, refreshAccess,
   }
 
   return (

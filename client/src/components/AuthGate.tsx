@@ -7,7 +7,6 @@ type Mode = 'signin' | 'signup' | 'magic'
 const TITLES: Record<Mode, string> = { signin: 'Sign in', signup: 'Create account', magic: 'Email me a link' }
 
 export function AuthScreen() {
-  const { cloud } = useStore()
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -41,21 +40,11 @@ export function AuthScreen() {
       <form className="gate__card" onSubmit={submit}>
         <span className="eyebrow">Setsmith</span>
         <h1>{TITLES[mode]}</h1>
-        {cloud.pendingInvite ? (
-          <p className="gate__note">
-            You've been invited to a band. Sign in, or create an account if you don't have one — you'll be
-            added to it automatically right after.
-          </p>
-        ) : (
-          <>
-            <p className="muted">Sign in to keep your band’s setlists in sync across phones and laptops, and to share access.</p>
-            <p className="gate__note">
-              Only the person managing setlists needs an account. Other players don’t sign in at all —
-              the manager sends them a link (Band → Public link) that opens straight to the live setlist and
-              current song, no login required.
-            </p>
-          </>
-        )}
+        <p className="muted">Sign in to keep your band’s setlists in sync across phones and laptops, and to share access.</p>
+        <p className="gate__note">
+          Only the person managing setlists needs an account. Editors and viewers who get an invite link
+          never see this screen at all — they land straight in the band, no sign-in required.
+        </p>
         <div className="gate__tabs" role="tablist">
           {(Object.keys(TITLES) as Mode[]).map((m) => (
             <button type="button" key={m} role="tab" aria-selected={mode === m} className={'lf__preset' + (mode === m ? ' is-on' : '')}
@@ -96,16 +85,21 @@ export function OnboardScreen() {
   return (
     <div className="gate">
       <div className="gate__card">
-        <span className="eyebrow">Signed in as {cloud.email}</span>
-        <h1>Set up your band</h1>
-        <form className="gate__section" onSubmit={(e) => { e.preventDefault(); run(() => cloud.createBand(name)) }}>
-          <h2>Start a band</h2>
-          <p className="muted">You become the manager, with a blank setlist to start filling in.</p>
-          <label className="gate__field">Band name
-            <input id="onboard-band" value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          <button className="pill pill--accent" type="submit" disabled={busy}>Create band</button>
-        </form>
+        <span className="eyebrow">{cloud.isAnonymous ? 'Joined without an account' : `Signed in as ${cloud.email}`}</span>
+        <h1>{cloud.isAnonymous ? 'That invite link didn\'t work' : 'Set up your band'}</h1>
+        {cloud.isAnonymous && (
+          <p className="muted">It may have expired or already been used. Ask your band manager for a fresh one, or paste a code below.</p>
+        )}
+        {!cloud.isAnonymous && (
+          <form className="gate__section" onSubmit={(e) => { e.preventDefault(); run(() => cloud.createBand(name)) }}>
+            <h2>Start a band</h2>
+            <p className="muted">You become the manager, with a blank setlist to start filling in.</p>
+            <label className="gate__field">Band name
+              <input id="onboard-band" value={name} onChange={(e) => setName(e.target.value)} required />
+            </label>
+            <button className="pill pill--accent" type="submit" disabled={busy}>Create band</button>
+          </form>
+        )}
         <form className="gate__section" onSubmit={(e) => { e.preventDefault(); run(() => cloud.joinWithCode(code)) }}>
           <h2>Join a band</h2>
           <p className="muted">Paste the invite link or code your manager sent you.</p>
@@ -115,8 +109,42 @@ export function OnboardScreen() {
           <button className="pill" type="submit" disabled={busy}>Join</button>
         </form>
         {error && <p className="gate__msg" role="alert">{error}</p>}
-        <button className="gate__skip" onClick={cloud.signOut}>Sign out</button>
+        <button className="gate__skip" onClick={cloud.signOut}>{cloud.isAnonymous ? 'Start over' : 'Sign out'}</button>
       </div>
+    </div>
+  )
+}
+
+export function JoinScreen() {
+  const { cloud } = useStore()
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    const err = await cloud.joinAnonymously(name)
+    if (err) { setError(err); setBusy(false) }
+    // On success the app signs itself in and redeems the invite automatically; this screen unmounts.
+  }
+
+  return (
+    <div className="gate">
+      <form className="gate__card" onSubmit={submit}>
+        <span className="eyebrow">Setsmith</span>
+        <h1>Join the band</h1>
+        <p className="muted">
+          You've been invited. No account needed — just tell the band who you are, and you'll land straight
+          in the setlist.
+        </p>
+        <label className="gate__field">Your name
+          <input id="join-name" required autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kasun" />
+        </label>
+        {error && <p className="gate__msg" role="alert">{error}</p>}
+        <button className="pill pill--accent pill--lg" type="submit" disabled={busy}>{busy ? 'Joining…' : 'Join'}</button>
+      </form>
     </div>
   )
 }
