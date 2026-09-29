@@ -20,10 +20,12 @@
   </head>
   <body>
     <div id="root"></div>
-    <!-- Static so it's present in the raw page source (not just after React mounts), per GetSongBPM's API terms. -->
-    <a href="https://getsongbpm.com" rel="noopener"
-      style="position:fixed;right:10px;bottom:10px;z-index:9999;font:11px/1 system-ui,sans-serif;color:#8a8d86;text-decoration:none;background:#0009;padding:4px 8px;border-radius:10px;">
-      BPM &amp; key data by GetSongBPM.com
+    <!-- Static so it's present in the raw page source (not just after React mounts), per GetSongBPM's API terms.
+         Kept intentionally tiny/subtle rather than removed -- their terms require a visible backlink or they
+         can suspend the API key without notice. -->
+    <a href="https://getsongbpm.com" rel="noopener" title="BPM & key data via GetSongBPM.com"
+      style="position:fixed;right:6px;bottom:6px;z-index:9999;font:7px/1 system-ui,sans-serif;color:#8a8d8680;text-decoration:none;">
+      GetSongBPM.com
     </a>
     <script type="module" src="/src/main.tsx"></script>
   </body>
