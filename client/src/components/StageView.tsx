@@ -162,12 +162,21 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
             <div className="stage__beat"><span className="stage__dot-wrap"><i ref={beatRef} /></span>NOW · {String(cur.number).padStart(2, '0')}</div>
             <div className="stage__titlerow">
               <h1>{cur.stageTitle}</h1>
-              {cur.chordSheet && (
-                <button type="button" className="stage__chordtoggle"
-                  onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
-                  {showChords ? 'Hide chords' : 'Chords'}
-                </button>
-              )}
+              <div className="stage__titleactions">
+                {cur.youtubeId && (
+                  <button type="button" className="stage__playbtn" aria-pressed={showVideo !== 0}
+                    aria-label={showVideo !== 0 ? 'Stop playback' : 'Play'}
+                    onClick={() => setShowVideo((v) => (v !== 0 ? 0 : 1))}>
+                    {showVideo !== 0 ? '■' : '▶'}
+                  </button>
+                )}
+                {cur.chordSheet && (
+                  <button type="button" className="stage__chordtoggle"
+                    onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
+                    {showChords ? 'Hide chords' : 'Chords'}
+                  </button>
+                )}
+              </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
             {showChords && cur.chordSheet ? (
@@ -204,30 +213,21 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                 {cur.notes && <div className="stage__card stage__card--wide stage__notes">{cur.notes}</div>}
               </div>
             )}
-            {cur.youtubeId && (
-              showVideo ? (
-                <div>
-                  <SongPlayer youtubeId={showVideo === 2 && cur.youtubeId2 ? cur.youtubeId2 : cur.youtubeId} title={cur.title} artist={cur.artist} />
+            {cur.youtubeId && showVideo !== 0 && (
+              <div>
+                <SongPlayer youtubeId={showVideo === 2 && cur.youtubeId2 ? cur.youtubeId2 : cur.youtubeId} title={cur.title} artist={cur.artist} />
+                <div className="stage__ytrow" style={{ marginTop: 8 }}>
                   {cur.youtubeId2 && (
-                    <div className="stage__ytrow" style={{ marginTop: 8 }}>
+                    <>
                       <button type="button" className={'stage__yt' + (showVideo !== 2 ? ' stage__yt--play' : '')}
                         onClick={() => setShowVideo(1)}>Song 1</button>
                       <button type="button" className={'stage__yt' + (showVideo === 2 ? ' stage__yt--play' : '')}
                         onClick={() => setShowVideo(2)}>Song 2</button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="stage__ytrow">
-                  <button type="button" className="stage__yt stage__yt--play"
-                    onClick={() => setShowVideo(1)}>▶ Play here{cur.youtubeId2 ? ' (song 1)' : ''}</button>
-                  {cur.youtubeId2 && (
-                    <button type="button" className="stage__yt stage__yt--play"
-                      onClick={() => setShowVideo(2)}>▶ Song 2</button>
+                    </>
                   )}
                   <a className="stage__yt" href={watchUrl(cur.youtubeId)} target="_blank" rel="noreferrer">Open in YouTube</a>
                 </div>
-              )
+              </div>
             )}
           </div>
         ) : (

@@ -304,9 +304,15 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__where b { font-size: 14px; font-weight: 600; }
 .stage__clock { height: 32px; padding: 0 12px; border-radius: 16px; background: #1a1b19; font: 500 13px var(--mono); display: flex; align-items: center; }
 .stage__sync { height: 32px; padding: 0 12px; border-radius: 16px; background: #1a1b19; font: 600 11px var(--mono); letter-spacing: .05em; display: flex; align-items: center; color: #e2f24a; flex: none; }
-.stage__titlerow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.stage__titlerow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.stage__titleactions { display: flex; align-items: center; gap: 10px; flex: none; padding-top: 4px; }
 .stage__chordtoggle { flex: none; height: 34px; padding: 0 14px; border-radius: 17px; background: #161715; border: 1px solid #2a2b28; color: #e2f24a; font: 600 12px var(--mono); letter-spacing: .04em; }
 .stage__chordtoggle[aria-pressed="true"] { background: #e2f24a; color: #111; border-color: #e2f24a; }
+.stage__playbtn {
+  flex: none; width: 52px; height: 52px; border-radius: 50%; border: 0; background: #e2f24a; color: #111;
+  font-size: 20px; display: grid; place-items: center; box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+.stage__playbtn[aria-pressed="true"] { background: #161715; color: #e2f24a; border: 1px solid #2a2b28; }
 .stage__chordbar { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
 .stage .stepper { height: 34px; grid-template-columns: 34px 1fr 34px; border-color: #2a2b28; background: #161715; }
 .stage .stepper button { color: #f4f4ef; }
