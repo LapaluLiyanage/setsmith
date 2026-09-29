@@ -25,6 +25,7 @@ interface Props {
   startSec: number
   selectedId: string | null
   playingId: string | null
+  readOnly: boolean
   onPlay: (itemId: string) => void
   onTap: (itemId: string) => void
   onAddSong: () => void
@@ -32,7 +33,7 @@ interface Props {
   notify: (message: string) => void
 }
 
-export function SessionColumn({ session, index, songs, members, startSec, selectedId, playingId, onPlay, onTap, onAddSong, onEditItem, notify }: Props) {
+export function SessionColumn({ session, index, songs, members, startSec, selectedId, playingId, readOnly, onPlay, onTap, onAddSong, onEditItem, notify }: Props) {
   const { dispatch } = useStore()
   const { setNodeRef, isOver } = useDroppable({ id: session.id })
   const [arrangeOpen, setArrangeOpen] = useState(false)
@@ -82,32 +83,34 @@ export function SessionColumn({ session, index, songs, members, startSec, select
           <button className="session__toggle icon-btn" aria-expanded={!collapsed} aria-label={collapsed ? 'Show songs' : 'Hide songs'}
             onClick={() => setCollapsed((c) => !c)}>{collapsed ? '▸' : '▾'}</button>
           <div className="session__title">
-            <input id={`session-name-${session.id}`} className="session__name" value={session.name} aria-label="Session name"
+            <input id={`session-name-${session.id}`} className="session__name" value={session.name} aria-label="Session name" disabled={readOnly}
               onChange={(e) => dispatch({ type: 'updateSession', sessionId: session.id, patch: { name: e.target.value } })} />
             <span className="session__sub">
               {count} · target
               <input id={`session-target-${session.id}`} type="number" min={0} className="session__target mono" value={session.targetMinutes}
-                aria-label="Target minutes"
+                aria-label="Target minutes" disabled={readOnly}
                 onChange={(e) => dispatch({ type: 'updateSession', sessionId: session.id, patch: { targetMinutes: Number(e.target.value) || 0 } })} />
               min
             </span>
           </div>
-          <div className="menu-wrap" ref={menuRef}>
-            <button className="pill" aria-haspopup="menu" aria-expanded={arrangeOpen} onClick={() => setArrangeOpen((o) => !o)}>Auto-arrange ▾</button>
-            {arrangeOpen && (
-              <div className="menu" role="menu">
-                {ARRANGE.map(([mode, title, desc]) => (
-                  <button key={mode} role="menuitem" className="menu__item" onClick={() => {
-                    setArrangeOpen(false)
-                    dispatch({ type: 'arrange', sessionId: session.id, mode })
-                    notify(`${session.name} arranged · ${title}`)
-                  }}>
-                    <b>{title}</b><span>{desc}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {!readOnly && (
+            <div className="menu-wrap" ref={menuRef}>
+              <button className="pill" aria-haspopup="menu" aria-expanded={arrangeOpen} onClick={() => setArrangeOpen((o) => !o)}>Auto-arrange ▾</button>
+              {arrangeOpen && (
+                <div className="menu" role="menu">
+                  {ARRANGE.map(([mode, title, desc]) => (
+                    <button key={mode} role="menuitem" className="menu__item" onClick={() => {
+                      setArrangeOpen(false)
+                      dispatch({ type: 'arrange', sessionId: session.id, mode })
+                      notify(`${session.name} arranged · ${title}`)
+                    }}>
+                      <b>{title}</b><span>{desc}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <BpmSparkline values={session.items.map((i) => songs[i.songId]?.bpm ?? null)} />
@@ -148,6 +151,7 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                     members={members}
                     selected={selectedId === item.id}
                     playing={playingPart}
+                    readOnly={readOnly}
                     onPlay={(part) => onPlay(part === 2 ? partKey : item.id)}
                     onTap={() => onTap(item.id)}
                     onEdit={() => onEditItem(item.id)}
@@ -166,18 +170,20 @@ export function SessionColumn({ session, index, songs, members, startSec, select
             })}
           </ol>
         </SortableContext>
-        <div className="session__foot" style={{ marginTop: 6, flexDirection: 'column', gap: 6 }}>
-          <button className="add-song" onClick={onAddSong}><i>+</i>Add song</button>
-          {confirmDelete ? (
-            <span className="confirm" style={{ justifyContent: 'center' }}>
-              Delete {session.name} and its {count}?
-              <button className="pill pill--danger" onClick={() => dispatch({ type: 'deleteSession', sessionId: session.id })}>Delete</button>
-              <button className="pill pill--ghost" onClick={() => setConfirmDelete(false)}>Keep</button>
-            </span>
-          ) : (
-            <button className="pill pill--ghost" style={{ alignSelf: 'center' }} onClick={() => setConfirmDelete(true)}>Delete session</button>
-          )}
-        </div>
+        {!readOnly && (
+          <div className="session__foot" style={{ marginTop: 6, flexDirection: 'column', gap: 6 }}>
+            <button className="add-song" onClick={onAddSong}><i>+</i>Add song</button>
+            {confirmDelete ? (
+              <span className="confirm" style={{ justifyContent: 'center' }}>
+                Delete {session.name} and its {count}?
+                <button className="pill pill--danger" onClick={() => dispatch({ type: 'deleteSession', sessionId: session.id })}>Delete</button>
+                <button className="pill pill--ghost" onClick={() => setConfirmDelete(false)}>Keep</button>
+              </span>
+            ) : (
+              <button className="pill pill--ghost" style={{ alignSelf: 'center' }} onClick={() => setConfirmDelete(true)}>Delete session</button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

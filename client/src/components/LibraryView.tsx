@@ -16,7 +16,7 @@ const BPM_PRESETS = [
 const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
 
 export function LibraryView({ show }: { show: Show | null }) {
-  const { state, dispatch } = useStore()
+  const { state, dispatch, cloud } = useStore()
   const [filters, setFilters] = useState<LibraryFilters>(NO_FILTERS)
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
@@ -137,26 +137,32 @@ export function LibraryView({ show }: { show: Show | null }) {
                 <div className="lib-row__song">
                   <b>{r.song.title}</b><span>{r.song.artist || 'Unknown artist'}</span>
                 </div>
-                <button className="lib-row__lang" onClick={() => toggleLang(r)} title="Click to switch Sinhala / International">{r.lang}</button>
+                {cloud.readOnly ? (
+                  <span className="lib-row__lang">{r.lang}</span>
+                ) : (
+                  <button className="lib-row__lang" onClick={() => toggleLang(r)} title="Click to switch Sinhala / International">{r.lang}</button>
+                )}
                 <span className="lib-row__singer" data-label="Singer">
                   <span className="avatar" style={{ background: badge.color }}>{badge.initial}</span>{r.singerId ? badge.name : '—'}
                 </span>
                 <span className="lib-row__mono" data-label="BPM">{r.song.bpm ?? '—'}</span>
                 <span className="lib-row__mono" data-label="Key">{r.song.key ? shortKey(formatKey(r.song.key)) + ' · ' + r.camelot : '—'}</span>
                 <span className="lib-row__mono lib-row__muted" data-label="Played">{played}</span>
-                <div className="lib-row__add">
-                  <button className="pill" disabled={!show} title={show ? undefined : 'Create a show first'}
-                    aria-haspopup="menu" aria-expanded={menuFor === r.song.id}
-                    onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === r.song.id ? null : r.song.id) }}>+ Add to show</button>
-                  {menuFor === r.song.id && show && (
-                    <ul className="lib-menu" role="menu" onClick={(e) => e.stopPropagation()}>
-                      <li className="lib-menu__title">{show.name}</li>
-                      {show.sessions.map((s) => (
-                        <li key={s.id} role="none"><button role="menuitem" onClick={() => addTo(r, s.id, s.name)}>{s.name}</button></li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+                {!cloud.readOnly && (
+                  <div className="lib-row__add">
+                    <button className="pill" disabled={!show} title={show ? undefined : 'Create a show first'}
+                      aria-haspopup="menu" aria-expanded={menuFor === r.song.id}
+                      onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === r.song.id ? null : r.song.id) }}>+ Add to show</button>
+                    {menuFor === r.song.id && show && (
+                      <ul className="lib-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                        <li className="lib-menu__title">{show.name}</li>
+                        {show.sessions.map((s) => (
+                          <li key={s.id} role="none"><button role="menuitem" onClick={() => addTo(r, s.id, s.name)}>{s.name}</button></li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}

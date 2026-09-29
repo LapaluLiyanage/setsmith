@@ -14,6 +14,7 @@ interface Props {
   members: Member[]
   selected: boolean
   playing: 0 | 1 | 2
+  readOnly: boolean
   onPlay: (part: 1 | 2) => void
   onTap: () => void
   onEdit: () => void
@@ -22,7 +23,7 @@ interface Props {
 
 const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
 
-export function SongRow({ item, song, position, members, selected, playing, onPlay, onTap, onEdit, onSinger }: Props) {
+export function SongRow({ item, song, position, members, selected, playing, readOnly, onPlay, onTap, onEdit, onSinger }: Props) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -51,14 +52,18 @@ export function SongRow({ item, song, position, members, selected, playing, onPl
       data-sid={item.id}
       style={{ transform: CSS.Translate.toString(transform), transition }}
       className={`song${isDragging ? ' song--dragging' : ''}${selected ? ' song--selected' : ''}`}
-      onClick={onTap}
-      onKeyDown={onKeyDown}
-      tabIndex={0}
-      aria-label={`${position}. ${song.title}. ${selected ? 'Selected for swap.' : 'Press to pick for quick swap.'}`}
+      onClick={readOnly ? undefined : onTap}
+      onKeyDown={readOnly ? undefined : onKeyDown}
+      tabIndex={readOnly ? undefined : 0}
+      aria-label={readOnly ? `${position}. ${song.title}` : `${position}. ${song.title}. ${selected ? 'Selected for swap.' : 'Press to pick for quick swap.'}`}
     >
-      <button ref={setActivatorNodeRef} className="song__grip" aria-label={`Drag ${song.title}`} onClick={stop} {...attributes} {...listeners}>
-        <span>⠿</span><span>{String(position).padStart(2, '0')}</span>
-      </button>
+      {readOnly ? (
+        <span className="song__grip song__grip--static"><span>{String(position).padStart(2, '0')}</span></span>
+      ) : (
+        <button ref={setActivatorNodeRef} className="song__grip" aria-label={`Drag ${song.title}`} onClick={stop} {...attributes} {...listeners}>
+          <span>⠿</span><span>{String(position).padStart(2, '0')}</span>
+        </button>
+      )}
 
       <div className="song__thumb">
         {song.youtubeId ? <img src={thumbUrl(song.youtubeId)} alt="" loading="lazy" /> : <span>YT</span>}
@@ -70,27 +75,33 @@ export function SongRow({ item, song, position, members, selected, playing, onPl
           <span className="song__artist">{song.artist || 'Unknown artist'}</span>
         </div>
         <div className="song__tags">
-          <div className="menu-wrap" ref={menuRef}>
-            <button className="singer-btn" aria-haspopup="menu" aria-expanded={menuOpen}
-              onClick={(e) => { stop(e); setMenuOpen((o) => !o) }}>
+          {readOnly ? (
+            <span className="singer-btn singer-btn--static">
               <span className="avatar" style={{ background: badge.color }}>{badge.initial}</span>{badge.name}
-            </button>
-            {menuOpen && (
-              <div className="menu menu--left" role="menu" onClick={stop}>
-                {[...singers, null].map((m) => {
-                  const b = singerBadge(members, m?.id ?? null)
-                  return (
-                    <button key={m?.id ?? 'none'} role="menuitem" className="menu__row"
-                      onClick={() => { setMenuOpen(false); onSinger(m?.id ?? null) }}>
-                      <span className="avatar avatar--lg" style={{ background: b.color }}>{b.initial}</span>
-                      <span>{b.name}</span>
-                      <span className="mono">{(m?.id ?? null) === item.singerId ? '●' : ''}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+            </span>
+          ) : (
+            <div className="menu-wrap" ref={menuRef}>
+              <button className="singer-btn" aria-haspopup="menu" aria-expanded={menuOpen}
+                onClick={(e) => { stop(e); setMenuOpen((o) => !o) }}>
+                <span className="avatar" style={{ background: badge.color }}>{badge.initial}</span>{badge.name}
+              </button>
+              {menuOpen && (
+                <div className="menu menu--left" role="menu" onClick={stop}>
+                  {[...singers, null].map((m) => {
+                    const b = singerBadge(members, m?.id ?? null)
+                    return (
+                      <button key={m?.id ?? 'none'} role="menuitem" className="menu__row"
+                        onClick={() => { setMenuOpen(false); onSinger(m?.id ?? null) }}>
+                        <span className="avatar avatar--lg" style={{ background: b.color }}>{b.initial}</span>
+                        <span>{b.name}</span>
+                        <span className="mono">{(m?.id ?? null) === item.singerId ? '●' : ''}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           <span className={`tag tag--dark${song.bpm ? '' : ' tag--missing'}`} title={song.bpmSource ? `BPM from ${song.bpmSource}` : 'No BPM yet'}>
             {song.bpm ?? '—'} bpm
           </span>
@@ -123,7 +134,9 @@ export function SongRow({ item, song, position, members, selected, playing, onPl
             <a className="icon-btn" title="Search YouTube" aria-label={`Search ${song.title} on YouTube`} target="_blank" rel="noreferrer"
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${song.title} ${song.artist}`)}`} onClick={stop}>▶</a>
           )}
-          <button className="icon-btn" title="Edit song" aria-label={`Edit ${song.title}`} onClick={(e) => { stop(e); onEdit() }}>⋯</button>
+          {!readOnly && (
+            <button className="icon-btn" title="Edit song" aria-label={`Edit ${song.title}`} onClick={(e) => { stop(e); onEdit() }}>⋯</button>
+          )}
         </div>
       </div>
     </li>

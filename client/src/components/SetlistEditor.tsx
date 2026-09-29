@@ -233,15 +233,15 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
             <span className="eyebrow">{showDateLine(show.date)}</span>
             <span className="chip" style={status === 'Over slot' ? { background: 'var(--wr)', color: '#fff' } : undefined}>{status}</span>
           </div>
-          <textarea id="show-name" className="show-card__title" rows={1} value={show.name} aria-label="Show name"
+          <textarea id="show-name" className="show-card__title" rows={1} value={show.name} aria-label="Show name" disabled={cloud.readOnly}
             onChange={(e) => dispatch({ type: 'updateShow', showId: show.id, patch: { name: e.target.value } })} />
           <span className="muted" style={{ fontSize: 14 }}>
             {[show.venue, state.bandName, `${singerCount} singer${singerCount === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}
           </span>
           <div className="show-card__row">
-            <input id="show-date" type="date" value={show.date} aria-label="Show date"
+            <input id="show-date" type="date" value={show.date} aria-label="Show date" disabled={cloud.readOnly}
               onChange={(e) => dispatch({ type: 'updateShow', showId: show.id, patch: { date: e.target.value } })} />
-            <input id="show-venue" value={show.venue} placeholder="Venue" aria-label="Venue"
+            <input id="show-venue" value={show.venue} placeholder="Venue" aria-label="Venue" disabled={cloud.readOnly}
               onChange={(e) => dispatch({ type: 'updateShow', showId: show.id, patch: { venue: e.target.value } })} />
           </div>
         </section>
@@ -250,7 +250,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
           <div className="stats__grid">
             <label className="stat">
               <span className="stat__label">Booked slot (min)</span>
-              <input id="show-slot" type="number" min={0} className="stat__value" value={show.slotMinutes}
+              <input id="show-slot" type="number" min={0} className="stat__value" value={show.slotMinutes} disabled={cloud.readOnly}
                 style={{ height: 'auto', padding: 0, border: 0, background: 'transparent', width: '4ch' }}
                 onChange={(e) => dispatch({ type: 'updateShow', showId: show.id, patch: { slotMinutes: Number(e.target.value) || 0 } })} />
             </label>
@@ -284,6 +284,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
               startSec={starts[i]}
               selectedId={selectedId}
               playingId={playingId}
+              readOnly={cloud.readOnly}
               onPlay={(itemId) => setPlayingId((p) => (p === itemId ? null : itemId))}
               onTap={onTap}
               onAddSong={() => setDrawer({ mode: 'add', sessionId: session.id })}
@@ -291,12 +292,14 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
               notify={notify}
             />
           ))}
-          <button className="add-session" onClick={() => dispatch({
-            type: 'addSession', showId: show.id,
-            session: { id: newId('sess'), name: `Session ${show.sessions.length + 1}`, targetMinutes: 45, items: [] },
-          })}>
-            + Add session
-          </button>
+          {!cloud.readOnly && (
+            <button className="add-session" onClick={() => dispatch({
+              type: 'addSession', showId: show.id,
+              session: { id: newId('sess'), name: `Session ${show.sessions.length + 1}`, targetMinutes: 45, items: [] },
+            })}>
+              + Add session
+            </button>
+          )}
         </div>
         <DragOverlay dropAnimation={{ duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' }}>
           {activeSong && (
@@ -326,8 +329,10 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
           <span className="dock__sep" />
           <button className="dock__btn" disabled={!allItems.length} onClick={onStage}>Rehearse</button>
           <button className="dock__btn" disabled={!canUndo} onClick={undo} title="Undo (Ctrl+Z)">Undo</button>
-          <button className="dock__btn" disabled={!show.sessions.length}
-            onClick={() => show.sessions[0] && setDrawer({ mode: 'add', sessionId: show.sessions[0].id })}>+ Add song</button>
+          {!cloud.readOnly && (
+            <button className="dock__btn" disabled={!show.sessions.length}
+              onClick={() => show.sessions[0] && setDrawer({ mode: 'add', sessionId: show.sessions[0].id })}>+ Add song</button>
+          )}
           <button className="dock__btn dock__btn--accent" onClick={onExport}>Export PDF</button>
         </nav>
       </div>
