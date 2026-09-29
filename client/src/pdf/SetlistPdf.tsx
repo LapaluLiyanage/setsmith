@@ -1,9 +1,12 @@
 import { Document, Font, Image, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
-import sinhalaRegular from '@fontsource/noto-sans-sinhala/files/noto-sans-sinhala-sinhala-400-normal.woff?url'
-import sinhalaBold from '@fontsource/noto-sans-sinhala/files/noto-sans-sinhala-sinhala-700-normal.woff?url'
+import sinhalaRegular from './fonts/NotoSansSinhala-Regular.ttf?url'
+import sinhalaBold from './fonts/NotoSansSinhala-Bold.ttf?url'
 import type { ExportData } from '../lib/exportData'
 
-// The built-in PDF fonts have no Sinhala glyphs, so any text containing Sinhala switches to Noto Sans Sinhala.
+// The built-in PDF fonts have no Sinhala glyphs, so any text containing Sinhala switches to Noto Sans
+// Sinhala. Self-hosted as TTF (not the @fontsource WOFF build): react-pdf's font embedding is built on
+// pdfkit/fontkit, which handles TTF/OTF reliably but can throw "Offset is outside the bounds of the
+// DataView" on some WOFF files at embed time.
 Font.register({
   family: 'NotoSinhala',
   fonts: [{ src: sinhalaRegular, fontWeight: 400 }, { src: sinhalaBold, fontWeight: 700 }],
