@@ -34,7 +34,7 @@ function showDateLine(iso: string): string {
 }
 
 export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props) {
-  const { state, dispatch, canUndo } = useStore()
+  const { state, dispatch, canUndo, cloud } = useStore()
   const members = state.members
 
   // While dragging, a working copy shows cross-session moves live; it's committed as one undo step on drop.
@@ -107,11 +107,13 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
     rectsRef.current = next
   }, [show.sessions])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  )
+  // Sensor hooks must run unconditionally every render; whether they actually activate drag is
+  // decided below instead. Viewers can't persist a drag anyway (the save is rejected server-side),
+  // which without this guard shows as "picks up, drops, then snaps back" -- so drag never starts.
+  const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  const touchSensor = useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
+  const keyboardSensor = useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  const sensors = useSensors(...(cloud.readOnly ? [] : [pointerSensor, touchSensor, keyboardSensor]))
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setSelectedId(null); setPlayingId(null) } }
@@ -170,6 +172,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
   }
 
   function onTap(itemId: string) {
+    if (cloud.readOnly) return
     if (!selectedId) { setSelectedId(itemId); setToast(null); return }
     if (selectedId === itemId) { setSelectedId(null); return }
     const a = findItem(show.sessions, selectedId)
