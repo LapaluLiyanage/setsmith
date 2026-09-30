@@ -42,6 +42,38 @@ function useWakeLock() {
   }, [])
 }
 
+type FSDocument = Document & { webkitFullscreenElement?: Element | null; webkitExitFullscreen?: () => Promise<void> }
+type FSElement = HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }
+
+/** True fullscreen (hides the browser chrome/address bar too), for reading a chart or the
+ * key/BPM cards from across the stage. iOS Safari on iPhone has no Fullscreen API at all --
+ * there's no fallback for that, so the button just doesn't appear there. */
+function useFullscreen(ref: { current: HTMLElement | null }) {
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const onChange = () => setActive(!!(document.fullscreenElement || (document as FSDocument).webkitFullscreenElement))
+    document.addEventListener('fullscreenchange', onChange)
+    document.addEventListener('webkitfullscreenchange', onChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange)
+      document.removeEventListener('webkitfullscreenchange', onChange)
+    }
+  }, [])
+  const supported = typeof document !== 'undefined' && (document.fullscreenEnabled || !!(document as FSDocument).webkitExitFullscreen)
+  function toggle() {
+    if (active) {
+      if (document.exitFullscreen) document.exitFullscreen().catch(() => {})
+      else (document as FSDocument).webkitExitFullscreen?.()
+    } else {
+      const el = ref.current as FSElement | null
+      if (!el) return
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
+      else el.webkitRequestFullscreen?.()
+    }
+  }
+  return { active, supported, toggle }
+}
+
 export function StageView({ show, onClose }: { show: Show; onClose: () => void }) {
   const { state, cloud } = useStore()
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
@@ -57,6 +89,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const beatRef = useRef<HTMLDivElement>(null)
   const clock = useClock()
   useWakeLock()
+  const { active: fsActive, supported: fsSupported, toggle: toggleFullscreen } = useFullscreen(rootRef)
 
   // Fetch the YouTube player script as soon as Stage view opens, not on the first tap of Play --
   // by then it's already loaded, so playVideo() still runs within the tap's gesture and isn't
@@ -157,6 +190,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
       <div className="stage__col">
         <header className="stage__head">
           <button className="stage__close" onClick={onClose} aria-label="Close stage view">×</button>
+          {fsSupported && (
+            <button className="stage__close" onClick={toggleFullscreen} aria-label={fsActive ? 'Exit full screen' : 'Full screen'}>
+              {fsActive ? '⤢' : '⛶'}
+            </button>
+          )}
           <div className="stage__where">
             <span>{cur ? `${cur.sessionName.toUpperCase()} SESSION` : show.name}</span>
             <b>{cur ? `Song ${cur.inSession} of ${cur.sessionSize} · ${cur.number}/${list.length} tonight` : 'No songs yet'}</b>

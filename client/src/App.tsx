@@ -8,6 +8,38 @@ import { StageView } from './components/StageView'
 import { newId, useStore } from './state/store'
 import { useTheme } from './state/theme'
 
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+/** Chrome/Edge/Android fire beforeinstallprompt when the site meets install criteria; Safari
+ * never does (iOS installs via its own Share -> Add to Home Screen, nothing a page can trigger). */
+function useInstallPrompt() {
+  const [deferred, setDeferred] = useState<InstallPromptEvent | null>(null)
+
+  useEffect(() => {
+    const onPrompt = (e: Event) => { e.preventDefault(); setDeferred(e as InstallPromptEvent) }
+    const onInstalled = () => setDeferred(null)
+    window.addEventListener('beforeinstallprompt', onPrompt)
+    window.addEventListener('appinstalled', onInstalled)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt)
+      window.removeEventListener('appinstalled', onInstalled)
+    }
+  }, [])
+
+  return {
+    canInstall: !!deferred,
+    install: async () => {
+      if (!deferred) return
+      await deferred.prompt()
+      await deferred.userChoice
+      setDeferred(null)
+    },
+  }
+}
+
 /** Anvil with a music note resting on it: the Setsmith mark from the design. */
 function Mark() {
   return (
@@ -23,6 +55,7 @@ function Mark() {
 export default function App() {
   const { state, dispatch, cloud } = useStore()
   const [theme, toggleTheme] = useTheme()
+  const { canInstall, install } = useInstallPrompt()
   const [bandOpen, setBandOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [stageOpen, setStageOpen] = useState(false)
@@ -84,6 +117,7 @@ export default function App() {
             <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
+            {canInstall && <button className="nav__item nav__item--keep" onClick={install}>⭳ Install app</button>}
           </nav>
           <select id="show-picker" className="show-select" aria-label="Choose show" value={show?.id ?? ''}
             onChange={(e) => dispatch({ type: 'selectShow', showId: e.target.value })}>
