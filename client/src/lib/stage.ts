@@ -17,6 +17,8 @@ export interface StageSong {
   stageTitle: string
   artist: string
   singer: SingerBadge
+  /** Singer for the second half of a mashup; null otherwise. */
+  singer2: SingerBadge | null
   /** Key the band plays (after transpose), e.g. "G major". */
   key: string | null
   camelot: string | null
@@ -52,6 +54,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         stageTitle: song.shortTitle?.trim() || song.title,
         artist: song.artist,
         singer: singerBadge(members, item.singerId),
+        singer2: song.youtubeId2 && item.singerId2 ? singerBadge(members, item.singerId2) : null,
         key: played ? formatKey(played) : null,
         camelot: played ? camelot(played) : null,
         transposeNote: played && item.transpose

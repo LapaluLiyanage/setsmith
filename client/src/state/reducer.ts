@@ -104,7 +104,11 @@ export function bandReducer(state: BandState, action: Action): BandState {
       const members = state.members.filter((m) => m.id !== action.memberId)
       // Songs the member used to sing become unassigned rather than pointing at nobody.
       const cleared = mapItems({ ...state, members }, (items) =>
-        items.map((i) => (i.singerId === action.memberId ? { ...i, singerId: null } : i)))
+        items.map((i) => ({
+          ...i,
+          singerId: i.singerId === action.memberId ? null : i.singerId,
+          singerId2: i.singerId2 === action.memberId ? null : i.singerId2,
+        })))
       return cleared
     }
     case 'undo':

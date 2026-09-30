@@ -37,6 +37,7 @@ export function SongRow({ item, song, position, members, selected, playing, read
   }, [menuOpen])
 
   const badge = singerBadge(members, item.singerId)
+  const badge2 = song.youtubeId2 && item.singerId2 ? singerBadge(members, item.singerId2) : null
   const singers = members.filter((m) => m.isSinger)
   const played = song.key ? transposeKey(song.key, item.transpose) : null
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
@@ -101,6 +102,11 @@ export function SongRow({ item, song, position, members, selected, playing, read
                 </div>
               )}
             </div>
+          )}
+          {badge2 && (
+            <span className="singer-btn singer-btn--static" title="Singer for song 2">
+              <span className="avatar" style={{ background: badge2.color }}>{badge2.initial}</span>{badge2.name}
+            </span>
           )}
           <span className={`tag tag--dark${song.bpm ? '' : ' tag--missing'}`} title={song.bpmSource ? `BPM from ${song.bpmSource}` : 'No BPM yet'}>
             {song.bpm ?? '—'} bpm

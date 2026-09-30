@@ -45,6 +45,8 @@ export interface SetlistItem {
   id: string
   songId: string
   singerId: string | null
+  /** Second singer, for a mashup where each half is sung by someone different. Null for a regular song. */
+  singerId2?: string | null
   /** Semitones to shift from the original key (e.g. -2). */
   transpose: number
   notes: string

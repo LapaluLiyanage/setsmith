@@ -59,6 +59,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [artist, setArtist] = useState(existing?.song.artist ?? '')
   const [duration, setDuration] = useState(toClock(existing?.song.durationSec ?? null))
   const [singerId, setSingerId] = useState<string | null>(existing?.item.singerId ?? null)
+  const [singerId2, setSingerId2] = useState<string | null>(existing?.item.singerId2 ?? null)
   const [bpm, setBpm] = useState(existing?.song.bpm?.toString() ?? '')
   const [bpmSource, setBpmSource] = useState<BpmSource | null>(existing?.song.bpmSource ?? null)
   const [keyValue, setKeyValue] = useState(keyToValue(existing?.song.key ?? null))
@@ -186,7 +187,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       bpmSource: bpm ? (bpmSource ?? 'manual') : null,
       chordSheet: chordSheet.trim() ? chordSheet : null,
     }
-    const itemFields = { singerId, transpose, notes }
+    const itemFields = { singerId, singerId2: youtubeId2 ? singerId2 : null, transpose, notes }
     if (target.mode === 'add') {
       const song: Song = { id: newId('song'), ...songFields }
       dispatch({ type: 'addSongToSession', sessionId: target.sessionId, song, item: { id: newId('item'), songId: song.id, ...itemFields } })
@@ -310,7 +311,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
               </label>
 
               <div className="field">
-                <span className="eyebrow">Singer</span>
+                <span className="eyebrow">{youtubeId2 ? 'Singer for song 1' : 'Singer'}</span>
                 <div className="singers">
                   {[...singers, null].map((m) => {
                     const b = singerBadge(members, m?.id ?? null)
@@ -323,6 +324,23 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                   })}
                 </div>
               </div>
+
+              {youtubeId2 && (
+                <div className="field">
+                  <span className="eyebrow">Singer for song 2</span>
+                  <div className="singers">
+                    {[...singers, null].map((m) => {
+                      const b = singerBadge(members, m?.id ?? null)
+                      return (
+                        <button type="button" key={m?.id ?? 'none'} className="singer-opt" aria-pressed={(m?.id ?? null) === singerId2}
+                          onClick={() => setSingerId2(m?.id ?? null)}>
+                          <span className="avatar avatar--lg" style={{ background: b.color }}>{b.initial}</span>{m ? b.name : 'None'}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="tempo">
                 <div className="field">
