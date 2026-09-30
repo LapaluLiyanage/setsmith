@@ -245,3 +245,34 @@ grant execute on function my_role(uuid), create_band(text, jsonb, text), save_ba
 grant execute on function get_shared(text) to anon, authenticated;
 
 alter publication supabase_realtime add table band_data, band_access, now_playing;
+
+-- Chord sheet photos: one public bucket, path "<band_id>/<file>" so RLS can gate writes by band
+-- role while reads stay open (a public bucket serves GETs straight off the CDN, no policy check).
+insert into storage.buckets (id, name, public)
+values ('chord-sheets', 'chord-sheets', true)
+on conflict (id) do nothing;
+
+create policy "band editors upload chord sheets" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'chord-sheets'
+  and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
+);
+
+create policy "band editors update chord sheets" on storage.objects
+for update to authenticated
+using (
+  bucket_id = 'chord-sheets'
+  and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
+);
+
+create policy "band editors delete chord sheets" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'chord-sheets'
+  and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
+);
+
+create policy "public read chord sheets" on storage.objects
+for select to public
+using (bucket_id = 'chord-sheets');

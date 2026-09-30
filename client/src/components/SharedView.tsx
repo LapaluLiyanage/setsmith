@@ -120,24 +120,29 @@ export function SharedView({ token }: { token: string }) {
           <h2>{current.stageTitle}</h2>
           <p className="muted">{[current.artist, current.singer.name, current.key, current.bpm && `${current.bpm} bpm`].filter(Boolean).join(' · ')}</p>
           <div className="shared__actions">
-            {current.chordSheet && (
+            {(current.chordSheet || current.chordSheetImage) && (
               <button type="button" className="pill" aria-pressed={showChords} onClick={() => setShowChords((v) => !v)}>
                 {showChords ? 'Hide chords' : 'Chords'}
               </button>
             )}
           </div>
-          {showChords && current.chordSheet && (
+          {showChords && (current.chordSheet || current.chordSheetImage) && (
             <>
-              <div className="shared__actions">
-                <span className="muted" style={{ fontSize: 12 }}>Transpose (this screen only)</span>
-                <div className="stepper">
-                  <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
-                  <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
-                  <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+              {current.chordSheet && (
+                <div className="shared__actions">
+                  <span className="muted" style={{ fontSize: 12 }}>Transpose (this screen only)</span>
+                  <div className="stepper">
+                    <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
+                    <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
+                    <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                  </div>
+                  {chordTranspose !== 0 && <button type="button" className="pill" onClick={() => setChordTranspose(0)}>Reset</button>}
                 </div>
-                {chordTranspose !== 0 && <button type="button" className="pill" onClick={() => setChordTranspose(0)}>Reset</button>}
-              </div>
-              <pre className="shared__chords">{chordTranspose ? transposeChordSheet(current.chordSheet, chordTranspose) : current.chordSheet}</pre>
+              )}
+              {current.chordSheetImage && <img className="shared__chordimg" src={current.chordSheetImage} alt="Chord sheet" />}
+              {current.chordSheet && (
+                <pre className="shared__chords">{chordTranspose ? transposeChordSheet(current.chordSheet, chordTranspose) : current.chordSheet}</pre>
+              )}
             </>
           )}
           {current.youtubeId && <SongPlayer youtubeId={current.youtubeId} title={current.youtubeId2 ? `${current.title} — song 1` : current.title} artist={current.artist} />}

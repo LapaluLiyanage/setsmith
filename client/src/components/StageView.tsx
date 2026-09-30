@@ -174,7 +174,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Buttons, links and the chord/player areas handle their own taps and drags; a stray
   // pointerup landing back on the root (common on mobile touch) must not read as a swipe.
   function isSwipeable(target: EventTarget | null): boolean {
-    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .mp3'))
+    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .stage__chordimg, .mp3'))
   }
   function onPointerDown(e: PointerEvent) { x0.current = isSwipeable(e.target) ? e.clientX : null }
   function onPointerUp(e: PointerEvent) {
@@ -224,7 +224,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     {showVideo !== 0 ? '■' : '▶'}
                   </button>
                 )}
-                {cur.chordSheet && (
+                {(cur.chordSheet || cur.chordSheetImage) && (
                   <button type="button" className="stage__chordtoggle"
                     onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
                     {showChords ? 'Hide chords' : 'Chords'}
@@ -233,20 +233,27 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
-            {showChords && cur.chordSheet ? (
+            {showChords && (cur.chordSheet || cur.chordSheetImage) ? (
               <>
-                <div className="stage__chordbar">
-                  <span className="stage__label">TRANSPOSE (THIS SCREEN ONLY)</span>
-                  <div className="stepper">
-                    <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
-                    <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
-                    <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                {cur.chordSheet && (
+                  <div className="stage__chordbar">
+                    <span className="stage__label">TRANSPOSE (THIS SCREEN ONLY)</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
+                      <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
+                      <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                    </div>
+                    {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
                   </div>
-                  {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
-                </div>
-                <pre className="stage__chords">
-                  {chordTranspose ? transposeChordSheet(cur.chordSheet, chordTranspose) : cur.chordSheet}
-                </pre>
+                )}
+                {cur.chordSheetImage && (
+                  <img className="stage__chordimg" src={cur.chordSheetImage} alt="Chord sheet" />
+                )}
+                {cur.chordSheet && (
+                  <pre className="stage__chords">
+                    {chordTranspose ? transposeChordSheet(cur.chordSheet, chordTranspose) : cur.chordSheet}
+                  </pre>
+                )}
               </>
             ) : (
               <div className="stage__grid">

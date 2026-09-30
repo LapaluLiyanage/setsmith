@@ -323,6 +323,9 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
   flex: 1; min-width: 0; min-height: 0; margin: 0; padding: 18px; border-radius: 22px; background: #161715;
   overflow: auto; -webkit-overflow-scrolling: touch; white-space: pre; font: 600 16px/1.6 var(--mono); color: #f4f4ef;
 }
+/* touch-action overridden so a pinch stays a zoom instead of getting read as the stage's
+   pan-y-only swipe gesture, which would otherwise swallow it. */
+.stage__chordimg { max-width: 100%; border-radius: 22px; touch-action: pinch-zoom; }
 .stage__bars { display: flex; gap: 4px; padding: 14px 4px 0; }
 .stage__bars i { flex: 1; height: 4px; border-radius: 2px; background: #222320; }
 .stage__bars i.done { background: #5a5c56; }
@@ -539,6 +542,7 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
   margin: 0; min-width: 0; padding: 14px; border-radius: 16px; background: var(--dk); color: var(--dki);
   white-space: pre; overflow: auto; -webkit-overflow-scrolling: touch; font: 600 14px/1.6 var(--mono);
 }
+.shared__chordimg { max-width: 100%; border-radius: 16px; }
 @media (max-width: 480px) {
   .shared { padding: 20px 12px 48px; }
   .shared__live { padding: 14px; }
