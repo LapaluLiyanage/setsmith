@@ -252,7 +252,13 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               <div className="stage__grid">
                 <div className="stage__card stage__card--wide">
                   <span className="stage__avatar" style={{ background: cur.singer.color }}>{cur.singer.initial}</span>
-                  <div><span className="stage__label">SINGER</span><b className="stage__big">{cur.singer.name}</b></div>
+                  <div><span className="stage__label">{cur.singer2 ? 'SINGER 1' : 'SINGER'}</span><b className="stage__big">{cur.singer.name}</b></div>
+                  {cur.singer2 && (
+                    <>
+                      <span className="stage__avatar" style={{ background: cur.singer2.color }}>{cur.singer2.initial}</span>
+                      <div><span className="stage__label">SINGER 2</span><b className="stage__big">{cur.singer2.name}</b></div>
+                    </>
+                  )}
                 </div>
                 <div className="stage__card">
                   <span className="stage__label">KEY</span>

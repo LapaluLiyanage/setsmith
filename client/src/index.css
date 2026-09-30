@@ -335,8 +335,8 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__artist { font-size: 18px; color: #a4a79f; }
 .stage__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .stage__card { padding: 14px 18px; border-radius: 22px; background: #161715; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.stage__card--wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; }
-.stage__card--wide > div { display: flex; flex-direction: column; min-width: 0; }
+.stage__card--wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 14px; flex-wrap: wrap; }
+.stage__card--wide > div { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
 .stage__card--bpm { background: #e2f24a; color: #111; }
 .stage__card--bpm .stage__label { color: #111; font-weight: 600; }
 .stage__card--bpm span:last-child { font: 500 13px var(--mono); }

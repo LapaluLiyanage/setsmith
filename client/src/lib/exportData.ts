@@ -63,8 +63,11 @@ export function buildExport(show: Show, songs: Record<string, Song>, members: Me
       const song = songs[item.songId]
       if (!song) return []
       songCount++
-      const singer = item.singerId ? (memberName.get(item.singerId) ?? '') : ''
-      if (singer) counts.set(singer, (counts.get(singer) ?? 0) + 1)
+      const singerName = item.singerId ? (memberName.get(item.singerId) ?? '') : ''
+      const singer2Name = song.youtubeId2 && item.singerId2 ? (memberName.get(item.singerId2) ?? '') : ''
+      const singer = [singerName, singer2Name].filter(Boolean).join(' & ')
+      if (singerName) counts.set(singerName, (counts.get(singerName) ?? 0) + 1)
+      if (singer2Name) counts.set(singer2Name, (counts.get(singer2Name) ?? 0) + 1)
 
       let key = ''
       let code = ''
