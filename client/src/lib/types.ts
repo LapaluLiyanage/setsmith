@@ -34,6 +34,8 @@ export interface Song {
   lang?: Lang
   /** ChordPro-style: a chord line above each lyric line. Transposed per setlist item for Stage view. */
   chordSheet?: string | null
+  /** A photo of a chord sheet, e.g. a handwritten one — shown in Stage view alongside any typed chords. */
+  chordSheetImage?: string | null
   /** Shorter title for Stage view's big display, e.g. dropping "(feat. ...)" or a long subtitle. Falls back to title. */
   shortTitle?: string | null
   /** Second video for a mashup of two songs; youtubeId stays the first. Both stay independently playable. */

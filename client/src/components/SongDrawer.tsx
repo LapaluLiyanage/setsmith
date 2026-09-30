@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { fetchVideo, lookupBpm, searchYouTube, type BpmMatch, type VideoInfo } from '../lib/api'
+import { MAX_CHORD_IMAGE_BYTES, deleteChordSheetImage, uploadChordSheetImage } from '../lib/chordSheetImage'
 import { reducedMotion, useDrawerIn } from '../lib/motion'
 import { NOTE_NAMES, camelot, parseKey, suggestTranspose } from '../lib/music'
 import { singerBadge } from '../lib/singers'
@@ -40,7 +41,7 @@ const SOURCE_LABEL: Record<BpmSource, string> = {
 }
 
 export function SongDrawer({ target, members, onClose, notify }: Props) {
-  const { dispatch } = useStore()
+  const { dispatch, cloud } = useStore()
   const existing = target.mode === 'edit' ? target : null
   const singers = members.filter((m) => m.isSinger)
 
@@ -66,6 +67,10 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [transpose, setTranspose] = useState(existing?.item.transpose ?? 0)
   const [notes, setNotes] = useState(existing?.item.notes ?? '')
   const [chordSheet, setChordSheet] = useState(existing?.song.chordSheet ?? '')
+  const [chordImagePreview, setChordImagePreview] = useState<string | null>(existing?.song.chordSheetImage ?? null)
+  const [chordImageFile, setChordImageFile] = useState<File | null>(null)
+  const [chordImageRemoved, setChordImageRemoved] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [matches, setMatches] = useState<BpmMatch[]>([])
   const [taps, setTaps] = useState<number[]>([])
@@ -172,9 +177,44 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
     if (tapRef.current && !reducedMotion()) gsap.fromTo(tapRef.current, { scale: 0.92 }, { scale: 1, duration: 0.35, ease: 'elastic.out(1.2, 0.4)' })
   }
 
-  function onSubmit(e: FormEvent) {
+  function onPickChordImage(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) return setStatus('That file is not an image.')
+    if (file.size > MAX_CHORD_IMAGE_BYTES) return setStatus('That image is too large — 8MB max.')
+    setChordImageFile(file)
+    setChordImagePreview(URL.createObjectURL(file))
+    setChordImageRemoved(false)
+    setStatus(null)
+  }
+
+  function removeChordImage() {
+    setChordImageFile(null)
+    setChordImagePreview(null)
+    setChordImageRemoved(true)
+  }
+
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (!title.trim()) return setStatus('The song needs a title.')
+    const songId = existing?.song.id ?? newId('song')
+    let chordSheetImage = existing?.song.chordSheetImage ?? null
+    if (chordImageFile) {
+      if (!cloud.band) return setStatus("Can't upload an image without a band.")
+      setUploadingImage(true)
+      try {
+        chordSheetImage = await uploadChordSheetImage(cloud.band.id, songId, chordImageFile)
+      } catch (err) {
+        setUploadingImage(false)
+        return setStatus(`Couldn't upload the image: ${(err as Error).message}`)
+      }
+      setUploadingImage(false)
+      if (existing?.song.chordSheetImage) deleteChordSheetImage(existing.song.chordSheetImage)
+    } else if (chordImageRemoved) {
+      chordSheetImage = null
+      if (existing?.song.chordSheetImage) deleteChordSheetImage(existing.song.chordSheetImage)
+    }
     const songFields = {
       title: title.trim(),
       shortTitle: shortTitle.trim() ? shortTitle.trim() : null,
@@ -186,10 +226,11 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       key: valueToKey(keyValue),
       bpmSource: bpm ? (bpmSource ?? 'manual') : null,
       chordSheet: chordSheet.trim() ? chordSheet : null,
+      chordSheetImage,
     }
     const itemFields = { singerId, singerId2: youtubeId2 ? singerId2 : null, transpose, notes }
     if (target.mode === 'add') {
-      const song: Song = { id: newId('song'), ...songFields }
+      const song: Song = { id: songId, ...songFields }
       dispatch({ type: 'addSongToSession', sessionId: target.sessionId, song, item: { id: newId('item'), songId: song.id, ...itemFields } })
       notify(`Added “${song.title}” to ${target.sessionName}`)
     } else {
@@ -406,6 +447,25 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                 <textarea id="song-chords" className="mono" rows={6} value={chordSheet} onChange={(e) => setChordSheet(e.target.value)}
                   placeholder={'Chords on their own line above the lyrics, e.g.\nG           D\nAmazing grace how sweet'} />
               </label>
+
+              <div className="field">
+                <span className="eyebrow">Chord sheet photo (optional)</span>
+                {chordImagePreview ? (
+                  <div className="picked">
+                    <img src={chordImagePreview} alt="" />
+                    <div>
+                      <b>Photo attached</b>
+                      <span className="muted">Shown in Stage view alongside any typed chords above.</span>
+                    </div>
+                    <button type="button" className="pill" onClick={removeChordImage}>Remove</button>
+                  </div>
+                ) : (
+                  <label className="pill pill--ghost" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
+                    Add a photo of a chord sheet
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickChordImage} />
+                  </label>
+                )}
+              </div>
             </>
           )}
         </form>
@@ -427,8 +487,8 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
               <button type="button" className="pill pill--ghost pill--lg" onClick={() => setConfirmRemove(true)}>Remove</button>
             ))}
             <span className="grow" />
-            <button type="submit" form="song-form" className="pill pill--accent pill--lg">
-              {target.mode === 'add' ? `Add to ${target.sessionName}` : 'Save changes'}
+            <button type="submit" form="song-form" className="pill pill--accent pill--lg" disabled={uploadingImage}>
+              {uploadingImage ? 'Uploading photo…' : target.mode === 'add' ? `Add to ${target.sessionName}` : 'Save changes'}
             </button>
           </footer>
         )}
