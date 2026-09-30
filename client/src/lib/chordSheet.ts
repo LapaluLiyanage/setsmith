@@ -9,8 +9,15 @@ const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(?:/([A-G])([
 
 /** A section label like "Intro:" at the start of a line, kept as-is. */
 const LABEL_RE = /^[A-Za-z]+:$/
-/** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", kept as-is. */
-const DECORATION_RE = /^(x\d+|×\d+|\|+|-{2,})$/i
+/** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", "-", kept as-is. */
+const DECORATION_RE = /^(x\d+|×\d+|\|+|-+)$/i
+
+/** Splits a whitespace-delimited token into its bar/dash decorations and chord-ish pieces, so
+ * e.g. "|F#m" (a bar butted up against the chord, common in intro/interlude bar notation) becomes
+ * ["|", "F#m"] instead of failing to match as a chord at all. */
+function splitBarToken(token: string): string[] {
+  return token.split(/(\|+|-+)/).filter(Boolean)
+}
 
 function shiftNote(letter: string, accidental: string, semitones: number): string {
   const key = (letter + accidental).toUpperCase().replace('♯', '#').replace('♭', 'b')
@@ -36,9 +43,10 @@ export function isChordLine(line: string): boolean {
   const tokens = line.trim().split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return false
   const body = LABEL_RE.test(tokens[0]) ? tokens.slice(1) : tokens
-  return body.length > 0
-    && body.some((t) => CHORD_RE.test(t))
-    && body.every((t) => CHORD_RE.test(t) || DECORATION_RE.test(t))
+  const pieces = body.flatMap(splitBarToken)
+  return pieces.length > 0
+    && pieces.some((t) => CHORD_RE.test(t))
+    && pieces.every((t) => CHORD_RE.test(t) || DECORATION_RE.test(t))
 }
 
 /** Transpose a chord sheet: chords on chord lines are shifted (labels, bars and repeat counts pass through); lyric lines are untouched. */
@@ -46,6 +54,8 @@ export function transposeChordSheet(sheet: string, semitones: number): string {
   if (!sheet || semitones === 0) return sheet
   return sheet
     .split('\n')
-    .map((line) => (isChordLine(line) ? line.replace(/\S+/g, (t) => transposeChord(t, semitones)) : line))
+    .map((line) => (isChordLine(line)
+      ? line.replace(/\S+/g, (t) => splitBarToken(t).map((p) => transposeChord(p, semitones)).join(''))
+      : line))
     .join('\n')
 }
