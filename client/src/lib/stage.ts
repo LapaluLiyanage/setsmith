@@ -1,7 +1,7 @@
 import { transposeChordSheet } from './chordSheet'
 import { camelot, formatKey, transposeKey } from './music'
 import { formatDuration } from './setlist'
-import { singerBadge, type SingerBadge } from './singers'
+import { coSingerBadges, singerBadge, type SingerBadge } from './singers'
 import type { Member, Show, Song } from './types'
 
 export interface StageSong {
@@ -19,6 +19,8 @@ export interface StageSong {
   singer: SingerBadge
   /** Singer for the second half of a mashup; null otherwise. */
   singer2: SingerBadge | null
+  /** Extra singers sharing the song with `singer`; empty for a solo. */
+  coSingers: SingerBadge[]
   /** Key the band plays (after transpose), e.g. "G major". */
   key: string | null
   camelot: string | null
@@ -57,6 +59,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         artist: song.artist,
         singer: singerBadge(members, item.singerId),
         singer2: song.youtubeId2 && item.singerId2 ? singerBadge(members, item.singerId2) : null,
+        coSingers: coSingerBadges(members, item),
         key: played ? formatKey(played) : null,
         camelot: played ? camelot(played) : null,
         transposeNote: played && item.transpose
