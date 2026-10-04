@@ -88,6 +88,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     try { localStorage.setItem('stageChordCols', v ? '1' : '2') } catch { /* private mode */ }
     return !v
   })
+  const [imgZoom, setImgZoom] = useState(1)
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const [noteDraft, setNoteDraft] = useState('')
   const direction = useRef(1)
@@ -156,7 +157,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0) }, [index])
+  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1) }, [index])
 
   // Your own private note for this song -- nobody else can see it, and it's stored separately
   // from the shared setlist, so it never syncs to anyone else's screen.
@@ -270,8 +271,20 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   </div>
                 )}
                 {cur.chordSheetImage && (
+                  <div className="stage__chordbar">
+                    <span className="stage__label">ZOOM</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Zoom out" onClick={() => setImgZoom((z) => Math.max(1, +(z - 0.25).toFixed(2)))}>−</button>
+                      <span>{Math.round(imgZoom * 100)}%</span>
+                      <button type="button" aria-label="Zoom in" onClick={() => setImgZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))}>+</button>
+                    </div>
+                    {imgZoom !== 1 && <button type="button" className="stage__yt" onClick={() => setImgZoom(1)}>Reset</button>}
+                  </div>
+                )}
+                {cur.chordSheetImage && (
                   <div className="stage__chordimgwrap">
-                    <img className="stage__chordimg" src={cur.chordSheetImage} alt="Chord sheet" />
+                    <img className="stage__chordimg" src={cur.chordSheetImage} alt="Chord sheet"
+                      style={imgZoom > 1 ? { width: `${imgZoom * 100}%`, maxWidth: 'none' } : undefined} />
                   </div>
                 )}
                 {cur.chordSheet && (
