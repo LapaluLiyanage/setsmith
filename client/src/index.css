@@ -315,7 +315,10 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
   font-size: 20px; display: grid; place-items: center; box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
 }
 .stage__playbtn[aria-pressed="true"] { background: #161715; color: #e2f24a; border: 1px solid #2a2b28; }
-.stage__chordbar { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.stage__chordbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
+/* Two-column chord sheet: fills the first column to the pane height, then flows into the second,
+   so a tablet shows the whole sheet without vertical scrolling. */
+.stage__chords--two { column-count: 2; column-gap: 28px; column-fill: auto; column-rule: 1px solid #2a2b28; }
 .stage .stepper { height: 34px; grid-template-columns: 34px 1fr 34px; border-color: #2a2b28; background: #161715; }
 .stage .stepper button { color: #f4f4ef; }
 .stage .stepper span { border-inline-color: #2a2b28; color: #f4f4ef; min-width: 28px; }
@@ -325,7 +328,11 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 }
 /* pan-y keeps one-finger vertical scroll/drag working over the image (bare "pinch-zoom" blocks
    all single-finger panning, which froze the whole screen); pinch-zoom is added on top of it. */
-.stage__chordimg { max-width: 100%; border-radius: 22px; touch-action: pan-y pinch-zoom; }
+/* .stage is touch-action: pan-y and touch-action intersects up to the nearest scroll container, so a
+   zoomed image could only pan vertically. The wrapper is its own scroll container, which ends that
+   intersection and lets the image pan in both directions and pinch-zoom. */
+.stage__chordimgwrap { overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y pinch-zoom; border-radius: 22px; flex: none; }
+.stage__chordimg { display: block; max-width: 100%; height: auto; touch-action: pan-x pan-y pinch-zoom; }
 .stage__bars { display: flex; gap: 4px; padding: 14px 4px 0; }
 .stage__bars i { flex: 1; height: 4px; border-radius: 2px; background: #222320; }
 .stage__bars i.done { background: #5a5c56; }

@@ -9,6 +9,13 @@ export interface SingerBadge {
   color: string
 }
 
+/** Badges for the extra singers on a slot, skipping anyone who has since left the band or is the lead. */
+export function coSingerBadges(members: Member[], item: { singerId: string | null; coSingerIds?: string[] }): SingerBadge[] {
+  return (item.coSingerIds ?? [])
+    .filter((id) => id !== item.singerId && members.some((m) => m.id === id))
+    .map((id) => singerBadge(members, id))
+}
+
 export function singerBadge(members: Member[], singerId: string | null): SingerBadge {
   if (!singerId) return { name: 'No singer', initial: '?', color: 'var(--ln)' }
   const singers = members.filter((m) => m.isSinger)

@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { camelot, formatKey, transposeKey } from '../lib/music'
 import { formatDuration } from '../lib/setlist'
-import { singerBadge } from '../lib/singers'
+import { coSingerBadges, singerBadge } from '../lib/singers'
 import type { Member, SetlistItem, Song } from '../lib/types'
 import { thumbUrl } from '../lib/youtube'
 
@@ -38,6 +38,7 @@ export function SongRow({ item, song, position, members, selected, playing, read
 
   const badge = singerBadge(members, item.singerId)
   const badge2 = song.youtubeId2 && item.singerId2 ? singerBadge(members, item.singerId2) : null
+  const coBadges = coSingerBadges(members, item)
   const singers = members.filter((m) => m.isSinger)
   const played = song.key ? transposeKey(song.key, item.transpose) : null
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
@@ -103,6 +104,11 @@ export function SongRow({ item, song, position, members, selected, playing, read
               )}
             </div>
           )}
+          {coBadges.map((b) => (
+            <span key={b.name} className="singer-btn singer-btn--static" title="Also sings">
+              <span className="avatar" style={{ background: b.color }}>{b.initial}</span>{b.name}
+            </span>
+          ))}
           {badge2 && (
             <span className="singer-btn singer-btn--static" title="Singer for song 2">
               <span className="avatar" style={{ background: badge2.color }}>{badge2.initial}</span>{badge2.name}

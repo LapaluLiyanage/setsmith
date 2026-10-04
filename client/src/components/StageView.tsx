@@ -80,6 +80,14 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
   const [chordTranspose, setChordTranspose] = useState(0)
+  const [capo, setCapo] = useState(0)
+  const [twoCol, setTwoCol] = useState(() => {
+    try { return localStorage.getItem('stageChordCols') === '2' } catch { return false }
+  })
+  const toggleTwoCol = () => setTwoCol((v) => {
+    try { localStorage.setItem('stageChordCols', v ? '1' : '2') } catch { /* private mode */ }
+    return !v
+  })
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const [noteDraft, setNoteDraft] = useState('')
   const direction = useRef(1)
@@ -126,6 +134,12 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Typing in the note box (or any field) must not trigger navigation shortcuts.
+      const t = e.target as HTMLElement | null
+      if (t && (t.isContentEditable || /^(TEXTAREA|INPUT|SELECT)$/.test(t.tagName))) {
+        if (e.key === 'Escape') t.blur()
+        return
+      }
       if (e.key === 'Escape') onClose()
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(1) }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1) }
@@ -142,7 +156,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setShowVideo(0); setChordTranspose(0) }, [index])
+  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0) }, [index])
 
   // Your own private note for this song -- nobody else can see it, and it's stored separately
   // from the shared setlist, so it never syncs to anyone else's screen.
@@ -174,7 +188,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Buttons, links and the chord/player areas handle their own taps and drags; a stray
   // pointerup landing back on the root (common on mobile touch) must not read as a swipe.
   function isSwipeable(target: EventTarget | null): boolean {
-    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .stage__chordimg, .mp3'))
+    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .stage__chordimgwrap, .mp3'))
   }
   function onPointerDown(e: PointerEvent) { x0.current = isSwipeable(e.target) ? e.clientX : null }
   function onPointerUp(e: PointerEvent) {
@@ -244,14 +258,25 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
                     </div>
                     {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
+                    <span className="stage__label">CAPO</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Capo down" onClick={() => setCapo((c) => Math.max(0, c - 1))}>−</button>
+                      <span>{capo || '–'}</span>
+                      <button type="button" aria-label="Capo up" onClick={() => setCapo((c) => Math.min(11, c + 1))}>+</button>
+                    </div>
+                    <button type="button" className="stage__yt stage__colbtn" aria-pressed={twoCol} onClick={toggleTwoCol}>
+                      {twoCol ? '1 column' : '2 columns'}
+                    </button>
                   </div>
                 )}
                 {cur.chordSheetImage && (
-                  <img className="stage__chordimg" src={cur.chordSheetImage} alt="Chord sheet" />
+                  <div className="stage__chordimgwrap">
+                    <img className="stage__chordimg" src={cur.chordSheetImage} alt="Chord sheet" />
+                  </div>
                 )}
                 {cur.chordSheet && (
-                  <pre className="stage__chords">
-                    {chordTranspose ? transposeChordSheet(cur.chordSheet, chordTranspose) : cur.chordSheet}
+                  <pre className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}>
+                    {chordTranspose - capo ? transposeChordSheet(cur.chordSheet, chordTranspose - capo) : cur.chordSheet}
                   </pre>
                 )}
               </>
@@ -259,7 +284,8 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               <div className="stage__grid">
                 <div className="stage__card stage__card--wide">
                   <span className="stage__avatar" style={{ background: cur.singer.color }}>{cur.singer.initial}</span>
-                  <div><span className="stage__label">{cur.singer2 ? 'SINGER 1' : 'SINGER'}</span><b className="stage__big">{cur.singer.name}</b></div>
+                  <div><span className="stage__label">{cur.singer2 ? 'SINGER 1' : cur.coSingers.length ? 'SINGERS' : 'SINGER'}</span>
+                    <b className="stage__big">{[cur.singer.name, ...cur.coSingers.map((s) => s.name)].join(' & ')}</b></div>
                   {cur.singer2 && (
                     <>
                       <span className="stage__avatar" style={{ background: cur.singer2.color }}>{cur.singer2.initial}</span>

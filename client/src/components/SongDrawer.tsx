@@ -61,6 +61,7 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
   const [duration, setDuration] = useState(toClock(existing?.song.durationSec ?? null))
   const [singerId, setSingerId] = useState<string | null>(existing?.item.singerId ?? null)
   const [singerId2, setSingerId2] = useState<string | null>(existing?.item.singerId2 ?? null)
+  const [coSingerIds, setCoSingerIds] = useState<string[]>(existing?.item.coSingerIds ?? [])
   const [bpm, setBpm] = useState(existing?.song.bpm?.toString() ?? '')
   const [bpmSource, setBpmSource] = useState<BpmSource | null>(existing?.song.bpmSource ?? null)
   const [keyValue, setKeyValue] = useState(keyToValue(existing?.song.key ?? null))
@@ -228,7 +229,11 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
       chordSheet: chordSheet.trim() ? chordSheet : null,
       chordSheetImage,
     }
-    const itemFields = { singerId, singerId2: youtubeId2 ? singerId2 : null, transpose, notes }
+    const itemFields = {
+      singerId, singerId2: youtubeId2 ? singerId2 : null,
+      coSingerIds: coSingerIds.filter((id) => id !== singerId),
+      transpose, notes,
+    }
     if (target.mode === 'add') {
       const song: Song = { id: songId, ...songFields }
       dispatch({ type: 'addSongToSession', sessionId: target.sessionId, song, item: { id: newId('item'), songId: song.id, ...itemFields } })
@@ -365,6 +370,24 @@ export function SongDrawer({ target, members, onClose, notify }: Props) {
                   })}
                 </div>
               </div>
+
+              {singers.filter((m) => m.id !== singerId).length > 0 && (
+                <div className="field">
+                  <span className="eyebrow">Also sings (optional)</span>
+                  <div className="singers">
+                    {singers.filter((m) => m.id !== singerId).map((m) => {
+                      const b = singerBadge(members, m.id)
+                      const on = coSingerIds.includes(m.id)
+                      return (
+                        <button type="button" key={m.id} className="singer-opt" aria-pressed={on}
+                          onClick={() => setCoSingerIds((ids) => (on ? ids.filter((id) => id !== m.id) : [...ids, m.id]))}>
+                          <span className="avatar avatar--lg" style={{ background: b.color }}>{b.initial}</span>{b.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {youtubeId2 && (
                 <div className="field">

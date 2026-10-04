@@ -108,6 +108,7 @@ export function bandReducer(state: BandState, action: Action): BandState {
           ...i,
           singerId: i.singerId === action.memberId ? null : i.singerId,
           singerId2: i.singerId2 === action.memberId ? null : i.singerId2,
+          ...(i.coSingerIds ? { coSingerIds: i.coSingerIds.filter((id) => id !== action.memberId) } : {}),
         })))
       return cleared
     }
