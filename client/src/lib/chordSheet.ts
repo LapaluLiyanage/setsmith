@@ -13,14 +13,14 @@ const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(${BASS})$`)
 /** A section label like "Intro:" at the start of a line, kept as-is. */
 const LABEL_RE = /^[A-Za-z]+:$/
 /** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", "-", kept as-is. */
-const DECORATION_RE = /^(x\d+|×\d+|\|+|-+|\/+|\++|N\.?C\.?|%)$/i
+const DECORATION_RE = /^(x\d+|×\d+|\|+|-+|\/+|\++|[─-╿⊢⊣⊦‖]+|[[\]]|N\.?C\.?|%)$/i
 
 /** A chord, optionally wrapped in brackets as a note to the player ("(G/G#/Am)"), or typed with a
- * lowercase root and a quality ("cm" for Cm). A bare lowercase letter is never a chord ("a", "e"). */
-function chordCore(t: string): string | null {
+ * lowercase root and a quality ("cm" for Cm). A bare lowercase letter ("c") only counts when the line already has two real chords, so "a" and "e" in lyrics are safe. */
+function chordCore(t: string, allowBare = false): string | null {
   const core = t.length > 2 && t.startsWith('(') && t.endsWith(')') ? t.slice(1, -1) : t
   if (CHORD_RE.test(core)) return core
-  if (core.length > 1 && /^[a-g]/.test(core)) {
+  if ((allowBare || core.length > 1) && /^[a-g]/.test(core)) {
     const cap = core[0].toUpperCase() + core.slice(1)
     if (CHORD_RE.test(cap)) return cap
   }
@@ -31,7 +31,7 @@ function chordCore(t: string): string | null {
  * e.g. "|F#m" (a bar butted up against the chord, common in intro/interlude bar notation) becomes
  * ["|", "F#m"] instead of failing to match as a chord at all. */
 function splitBarToken(token: string): string[] {
-  return token.split(/(\|+|-+)/).filter(Boolean)
+  return token.split(/(\|+|-+|[─-╿⊢⊣⊦‖]+|[[\]])/).filter(Boolean)
 }
 
 function shiftNote(letter: string, accidental: string, semitones: number): string {
@@ -63,9 +63,10 @@ export function isChordLine(line: string): boolean {
   if (tokens.length === 0) return false
   const body = LABEL_RE.test(tokens[0]) ? tokens.slice(1) : tokens
   const pieces = body.flatMap(splitBarToken)
+  const strong = pieces.filter((t) => CHORD_RE.test(t)).length
   return pieces.length > 0
-    && pieces.some((t) => CHORD_RE.test(t))
-    && pieces.every((t) => chordCore(t) !== null || DECORATION_RE.test(t))
+    && strong > 0
+    && pieces.every((t) => chordCore(t, strong >= 2) !== null || DECORATION_RE.test(t))
 }
 
 /** Transpose a chord sheet: chords on chord lines are shifted (labels, bars and repeat counts pass through); lyric lines are untouched. */

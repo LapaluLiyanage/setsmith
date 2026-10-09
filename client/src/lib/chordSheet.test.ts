@@ -122,3 +122,27 @@ describe('plus marks, bracketed and lowercase chords', () => {
     expect(isChordLine('Be a face')).toBe(false)
   })
 })
+
+describe('repeat marks and bracketed bars', () => {
+  it.each(['|Gm  ⊢  |D  ⊢  |', '[|Gm  ├  |F  ├  |', '|Eb  |D  ⊢  |]'])('%s is a chord line', (l) => {
+    expect(isChordLine(l)).toBe(true)
+  })
+  it('keeps marks when transposing', () => {
+    expect(transposeChordSheet('[|Gm ⊢ |F ⊢ |]', 2)).toBe('[|Am ⊢ |G ⊢ |]')
+  })
+  it('does not treat a section label as a chord line', () => {
+    expect(isChordLine('[Verse 1]')).toBe(false)
+    expect(isChordLine('[Chorus]')).toBe(false)
+  })
+})
+
+describe('bare lowercase chord letters', () => {
+  it('accepts a lone lowercase letter between real chords', () => {
+    expect(isChordLine('Bb            Gm   c   Bb        Asus')).toBe(true)
+    expect(transposeChordSheet('Bb Gm c Bb', 2)).toBe('C Am d C')
+  })
+  it('does not treat a lone letter as a chord with just one real chord', () => {
+    expect(isChordLine('A a')).toBe(false)
+    expect(isChordLine('Am e')).toBe(false)
+  })
+})
