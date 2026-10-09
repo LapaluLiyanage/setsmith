@@ -104,3 +104,21 @@ describe('slash chords with qualities and extras', () => {
     expect(transposeChord('Dm/(Dm7)', 2)).toBe('Em/(Em7)')
   })
 })
+
+describe('plus marks, bracketed and lowercase chords', () => {
+  it('accepts a lone + between bars', () => {
+    expect(isChordLine('|Gm  | +  |Dm  | +  |')).toBe(true)
+  })
+  it('accepts a lowercase chord on a line with real chords', () => {
+    expect(isChordLine('Fm       cm       Eb       Cm')).toBe(true)
+    expect(transposeChord('cm', 2)).toBe('dm')
+  })
+  it('accepts a bracketed chord note and transposes inside it', () => {
+    expect(isChordLine('Bm       G    (G/G#/Am)')).toBe(true)
+    expect(transposeChord('(G/G#/Am)', 2)).toBe('(A/B♭/Bm)')
+  })
+  it('still rejects lyrics', () => {
+    expect(isChordLine('a bad dad')).toBe(false)
+    expect(isChordLine('Be a face')).toBe(false)
+  })
+})
