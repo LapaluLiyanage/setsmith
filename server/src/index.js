@@ -10,6 +10,14 @@ const GETSONGBPM_BASE_URL = process.env.GETSONGBPM_BASE_URL ?? 'https://api.gets
 
 const app = express()
 
+// The native (Capacitor) apps load from capacitor://localhost (iOS) / https://localhost (Android) and call this API
+// cross-origin. Only the lookups are public, so allow any origin for GET; the browser app is same-origin and unaffected.
+app.use('/api', (req, res, next) => {
+  res.set('Access-Control-Allow-Origin', '*')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
 // Lookups barely change, so a small in-memory cache saves YouTube quota (search costs 100 units).
 const cache = new Map()
 const CACHE_MS = 6 * 60 * 60 * 1000

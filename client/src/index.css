@@ -320,7 +320,7 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
    so desktop never got a second column). --maxch is the longest line; the font shrinks so that line
    fits one column (100cqw = pane content width) instead of spilling into the gap or next column. */
 .stage__chords--two { container-type: inline-size; column-count: 2; column-gap: 28px; column-fill: balance; column-rule: 1px solid #2a2b28; }
-.stage__chords--two .stage__cl { font-size: max(10px, min(1em, calc((100cqw - 28px) / 2 / (var(--maxch, 30) * 0.62)))); }
+.stage__chords--two .stage__cl { font-size: calc(max(10px, min(16px, (100cqw - 28px) / 2 / (var(--maxch, 30) * 0.62))) * var(--zoom, 1)); }
 .stage .stepper { height: 34px; grid-template-columns: 34px 1fr 34px; border-color: #2a2b28; background: #161715; }
 .stage .stepper button { color: #f4f4ef; }
 .stage .stepper span { border-inline-color: #2a2b28; color: #f4f4ef; min-width: 28px; }
@@ -640,3 +640,6 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__chords--focus.stage__chords--two, .stage__chords--focus:not(.stage__chords--two) { padding-inline: max(18px, calc(50% - 700px)); }
 .stage__chords--focus .stage__cl { white-space: pre; overflow-wrap: normal; }
 .stage__cols--two { column-count: 2; column-gap: 56px; column-fill: balance; column-rule: 1px solid #2a2b28; }
+
+/* Once A-/A+ has set a size, use exactly that in two columns; the fit-to-column shrink only applies at the default size. */
+.stage__chords--two.stage__chords--manual .stage__cl { font-size: inherit; }

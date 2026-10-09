@@ -5,6 +5,7 @@ import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSh
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
+import { keepScreenAwake } from '../lib/native'
 import { loadYouTubeApi } from '../lib/ytPlayer'
 import { useStore } from '../state/store'
 import { SongPlayer } from './SongPlayer'
@@ -218,6 +219,9 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     return () => ctx.revert()
   }, [index])
 
+  // On stage the phone must not sleep (native app only; no-op in a browser).
+  useEffect(() => keepScreenAwake(), [])
+
   // The dot pulses on the beat of the current song.
   useLayoutEffect(() => {
     if (!beatRef.current || reducedMotion()) return
@@ -402,7 +406,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   </div>
                 )}
                 {cur.chordSheet && (
-                  <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}
+                  <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}${fontSize !== 16 ? ' stage__chords--manual' : ''}`}
                     style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
                     {chordBody}
                   </div>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Setsmith</string>
+    <string name="title_activity_main">Setsmith</string>
+    <string name="package_name">com.setsmith.app</string>
+    <string name="custom_url_scheme">com.setsmith.app</string>
+</resources>
