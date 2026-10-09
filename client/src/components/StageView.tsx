@@ -299,34 +299,42 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               <>
                 {cur.chordSheet && (
                   <div className="stage__chordbar">
-                    <span className="stage__label">TRANSPOSE (THIS SCREEN ONLY)</span>
+                    <div className="stage__group">
+                    <span className="stage__label">TRANSPOSE</span>
                     <div className="stepper">
                       <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
                       <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
                       <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
                     </div>
                     {shownKey && <b className="stage__keynow">{shownKey}</b>}
-                    {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
+                    {chordTranspose !== 0 && <button type="button" className="stage__tool" onClick={() => setChordTranspose(0)}>Reset</button>}
+                    </div>
+                    <div className="stage__group">
                     <span className="stage__label">CAPO</span>
                     <div className="stepper">
                       <button type="button" aria-label="Capo down" onClick={() => setCapo((c) => Math.max(0, c - 1))}>−</button>
                       <span>{capo || '–'}</span>
                       <button type="button" aria-label="Capo up" onClick={() => setCapo((c) => Math.min(11, c + 1))}>+</button>
                     </div>
-                    <button type="button" className="stage__yt" aria-label="Smaller text" onClick={() => changeFont(-2)}>A−</button>
-                    <button type="button" className="stage__yt" aria-label="Larger text" onClick={() => changeFont(2)}>A+</button>
-                    <button type="button" className="stage__yt" aria-label="Reset transpose, capo and text size" disabled={!edited}
+                    </div>
+                    <div className="stage__group">
+                    <button type="button" className="stage__tool" aria-label="Smaller text" onClick={() => changeFont(-2)}>A−</button>
+                    <button type="button" className="stage__tool" aria-label="Larger text" onClick={() => changeFont(2)}>A+</button>
+                    <button type="button" className="stage__tool" aria-label="Reset transpose, capo and text size" disabled={!edited}
                       onClick={() => { setChordTranspose(0); setCapo(0); setFontSize(16); try { localStorage.removeItem('stageChordFont') } catch { /* private mode */ } }}>↺</button>
-                    <button type="button" className="stage__yt stage__colbtn" aria-pressed={twoCol} onClick={toggleTwoCol}>
+                    <button type="button" className="stage__tool" aria-pressed={twoCol} onClick={toggleTwoCol}>
                       {twoCol ? '1 column' : '2 columns'}
                     </button>
-                    <button type="button" className="stage__yt" aria-label="Print chord sheet" onClick={printChords}>Print</button>
-                    <button type="button" className={'stage__yt' + (scrolling ? ' stage__yt--play' : '')} aria-pressed={scrolling}
+                    <button type="button" className="stage__tool" aria-label="Print chord sheet" onClick={printChords}>Print</button>
+                    </div>
+                    <div className="stage__group">
+                    <button type="button" className="stage__tool stage__tool--go" aria-pressed={scrolling}
                       onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶ Auto-scroll'}</button>
                     <div className="stepper">
                       <button type="button" aria-label="Slower scroll" onClick={() => setSpeed((s) => Math.max(1, s - 1))}>−</button>
                       <span>{speed}</span>
                       <button type="button" aria-label="Faster scroll" onClick={() => setSpeed((s) => Math.min(10, s + 1))}>+</button>
+                    </div>
                     </div>
                   </div>
                 )}
