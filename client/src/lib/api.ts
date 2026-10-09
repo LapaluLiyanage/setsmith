@@ -14,8 +14,11 @@ export interface BpmMatch {
   key: string | null
 }
 
+// Web: same-origin. Native app: set VITE_API_URL (e.g. https://setsmith.onrender.com) so calls reach the server.
+const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '')
+
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(path)
+  const res = await fetch(API_BASE + path)
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(body.error ?? `Request failed (${res.status})`)
   return body as T
