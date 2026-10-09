@@ -6,12 +6,14 @@ const QUALITY =
   'dim7|dim|aug|sus4|sus2|sus|add9|add11|add2|add4|M7|M9|M11|M13|M|Δ7|Δ|ø7|ø|alt|5|6|7|9|11|13|2|4|' +
   '[#b♯♭](?:5|9|11|13)|\\([#b♯♭+-]?(?:add)?\\d+\\)|\\(maj7\\)|\\+|°'
 
-const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(?:/([A-G])([#b♯♭]?))?$`)
+/** Any number of slash-bass parts, each a note with optional quality and parentheses: "/E", "/Fmaj7", "/E/Am", "/(Dm7)". */
+const BASS = `(?:/\\(?[A-G][#b♯♭]?(?:${QUALITY})*\\)?)*`
+const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(${BASS})$`)
 
 /** A section label like "Intro:" at the start of a line, kept as-is. */
 const LABEL_RE = /^[A-Za-z]+:$/
 /** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", "-", kept as-is. */
-const DECORATION_RE = /^(x\d+|×\d+|\|+|-+|N\.?C\.?|%)$/i
+const DECORATION_RE = /^(x\d+|×\d+|\|+|-+|\/+|N\.?C\.?|%)$/i
 
 /** Splits a whitespace-delimited token into its bar/dash decorations and chord-ish pieces, so
  * e.g. "|F#m" (a bar butted up against the chord, common in intro/interlude bar notation) becomes
@@ -32,10 +34,10 @@ export function transposeChord(token: string, semitones: number): string {
   if (semitones === 0) return token
   const m = CHORD_RE.exec(token)
   if (!m) return token
-  const [, letter, acc, quality, bassLetter, bassAcc] = m
+  const [, letter, acc, quality, bass] = m
   const root = shiftNote(letter, acc, semitones)
-  const bass = bassLetter ? shiftNote(bassLetter, bassAcc, semitones) : null
-  return root + quality + (bass ? `/${bass}` : '')
+  const newBass = bass.replace(/(?<=\/\(?)([A-G])([#b♯♭]?)/g, (_, l: string, a: string) => shiftNote(l, a, semitones))
+  return root + quality + newBass
 }
 
 /** True when the line is a ChordPro-style chord line (allowing a leading section label like
