@@ -577,3 +577,35 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__sheethead { display: flex; align-items: center; gap: 8px; }
 .stage__sheettitle { flex: 1; min-width: 0; font: 600 15px var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stage__sheetpeek { position: absolute; top: 8px; right: 8px; z-index: 2; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #2a2b28; background: #161715; color: #f4f4ef; opacity: .4; }
+
+/* Motion for the chord focus view. */
+.stage__sheet { animation: sheetIn .32s cubic-bezier(.22, 1, .36, 1); }
+.stage__chords--focus { animation: sheetText .4s cubic-bezier(.22, 1, .36, 1); }
+.stage__sheetbar { transition: transform .35s cubic-bezier(.22, 1, .36, 1), opacity .3s ease; }
+.stage__sheetpeek { animation: peekIn .35s ease both; transition: opacity .2s ease, transform .15s ease; }
+.stage__sheetpeek:hover { opacity: .9; }
+.stage__sheetpeek:active { transform: scale(.9); }
+.stage__tool, .stage .stepper button { transition: background-color .15s ease, border-color .2s ease, color .2s ease, transform .12s ease, opacity .2s ease; }
+.stage__tool:active:not(:disabled), .stage .stepper button:active { transform: scale(.94); }
+.stage .stepper button:active { background: #232421; }
+.stage__tool[aria-pressed="true"] { background: rgba(226, 242, 74, .08); }
+.stage__chords--focus .stage__cl--chord { transition: color .25s ease; }
+@keyframes sheetIn { from { opacity: 0; transform: scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes sheetText { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes peekIn { from { opacity: 0; transform: scale(.7); } to { opacity: .4; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .stage__sheet, .stage__chords--focus, .stage__sheetpeek { animation: none; }
+  .stage__sheetbar, .stage__tool, .stage .stepper button { transition: none; }
+}
+
+/* Always-reachable close: when the toolbar is hidden, ✕ (hide chords) and ☰ (show controls) float in the corner. */
+.stage__sheetpeek { display: flex; gap: 8px; width: auto; height: auto; border: 0; background: none; border-radius: 0; opacity: 1; animation: peekIn2 .35s ease both; }
+.stage__sheetpeek button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #2a2b28; background: rgba(22, 23, 21, .92); color: #f4f4ef; font-size: 18px; opacity: .55; transition: opacity .2s ease, transform .12s ease; }
+.stage__sheetpeek button:hover { opacity: 1; }
+.stage__sheetpeek button:active { transform: scale(.9); }
+@keyframes peekIn2 { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+
+/* Chord focus, 2 columns: the text size is exactly what A-/A+ set -- it never auto-shrinks (and so never
+   "zooms" between songs or when transposing). A line too long for a column wraps instead of being cut off. */
+.stage__chords--focus.stage__chords--two .stage__cl { font-size: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
+.stage__chords--focus .stage__cl { white-space: pre-wrap; overflow-wrap: anywhere; }
