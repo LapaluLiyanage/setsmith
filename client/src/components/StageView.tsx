@@ -97,6 +97,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     return n
   })
   const chordsRef = useRef<HTMLDivElement>(null)
+  const [fullSheet, setFullSheet] = useState(false)
   const [barShown, setBarShown] = useState(true)
   const barTimer = useRef<number>(0)
   const [scrolling, setScrolling] = useState(false)
@@ -249,9 +250,10 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     if (Math.abs(dx) > SWIPE_PX) go(dx < 0 ? 1 : -1)
   }
 
-  // Chord focus: the sheet takes the whole screen and its toolbar fades away after a few seconds;
+  // Chord focus (opened with the Full screen button in the chord toolbar): the sheet takes the whole screen and its toolbar fades away after a few seconds;
   // tapping the sheet (or the corner handle) brings it back. A photo sheet keeps the normal layout.
-  const focusSheet = showChords && !!cur?.chordSheet && !cur.chordSheetImage
+  const focusSheet = showChords && fullSheet && !!cur?.chordSheet && !cur.chordSheetImage
+  useEffect(() => { if (!showChords) setFullSheet(false) }, [showChords])
   function wakeBar() {
     setBarShown(true)
     window.clearTimeout(barTimer.current)
@@ -296,6 +298,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       {twoCol ? '1 column' : '2 columns'}
                     </button>
                     <button type="button" className="stage__tool" aria-label="Print chord sheet" onClick={printChords}>Print</button>
+                    {!focusSheet && <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(true)}>⤢ Full screen</button>}
                     </div>
                     <div className="stage__group">
                     <button type="button" className="stage__tool stage__tool--go" aria-pressed={scrolling}
@@ -484,12 +487,17 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   {fsActive ? '⤢' : '⛶'}
                 </button>
               )}
-              <button type="button" className="stage__tool" onClick={() => setShowChords(false)}>Hide chords</button>
+              <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(false)}>⤡ Exit full screen</button>
             </div>
             <div className="stage__chordbar">{chordTools}</div>
           </div>
-          {!barShown && <button type="button" className="stage__sheetpeek" aria-label="Show controls" onClick={wakeBar}>☰</button>}
-          <div ref={chordsRef} className={`stage__chords stage__chords--focus${twoCol ? ' stage__chords--two' : ''}`}
+          {!barShown && (
+            <div className="stage__sheetpeek">
+              <button type="button" aria-label="Exit full screen" onClick={() => setFullSheet(false)}>⤡</button>
+              <button type="button" aria-label="Show controls" onClick={wakeBar}>☰</button>
+            </div>
+          )}
+          <div key={cur.itemId} ref={chordsRef} className={`stage__chords stage__chords--focus${twoCol ? ' stage__chords--two' : ''}`}
             style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}
             onClick={toggleBar}>
             {chordLines.map((line, i) => (
