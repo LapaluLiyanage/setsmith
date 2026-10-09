@@ -96,6 +96,9 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     try { localStorage.setItem('stageChordFont', String(n)) } catch { /* private mode */ }
     return n
   })
+  const chordsRef = useRef<HTMLDivElement>(null)
+  const [barShown, setBarShown] = useState(true)
+  const barTimer = useRef<number>(0)
   const [scrolling, setScrolling] = useState(false)
   const [speed, setSpeed] = useState(4)
   const [imgZoom, setImgZoom] = useState(1)
@@ -177,7 +180,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
   // because scrollTop rounds; stops by itself at the bottom.
   useEffect(() => {
-    const el = rootRef.current
+    const el = chordsRef.current ?? rootRef.current
     if (!scrolling || !el) return
     let raf = 0, last = performance.now(), pos = el.scrollTop
     const tick = (t: number) => {
@@ -236,7 +239,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Buttons, links and the chord/player areas handle their own taps and drags; a stray
   // pointerup landing back on the root (common on mobile touch) must not read as a swipe.
   function isSwipeable(target: EventTarget | null): boolean {
-    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .stage__chordimgwrap, .mp3'))
+    return !(target instanceof Element && target.closest('button, a, input, select, textarea, .stage__chords, .stage__chordbar, .stage__chordimgwrap, .stage__sheet, .mp3'))
   }
   function onPointerDown(e: PointerEvent) { x0.current = isSwipeable(e.target) ? e.clientX : null }
   function onPointerUp(e: PointerEvent) {
@@ -245,6 +248,66 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     x0.current = null
     if (Math.abs(dx) > SWIPE_PX) go(dx < 0 ? 1 : -1)
   }
+
+  // Chord focus: the sheet takes the whole screen and its toolbar fades away after a few seconds;
+  // tapping the sheet (or the corner handle) brings it back. A photo sheet keeps the normal layout.
+  const focusSheet = showChords && !!cur?.chordSheet && !cur.chordSheetImage
+  function wakeBar() {
+    setBarShown(true)
+    window.clearTimeout(barTimer.current)
+    barTimer.current = window.setTimeout(() => setBarShown(false), 4000)
+  }
+  function toggleBar() {
+    if (barShown) { window.clearTimeout(barTimer.current); setBarShown(false) } else wakeBar()
+  }
+  useEffect(() => {
+    if (!focusSheet) return
+    wakeBar()
+    return () => window.clearTimeout(barTimer.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusSheet, index])
+
+  const chordTools = (
+    <>
+                    <div className="stage__group">
+                    <span className="stage__label">TRANSPOSE</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
+                      <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
+                      <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
+                    </div>
+                    {shownKey && <b className="stage__keynow">{shownKey}</b>}
+                    {chordTranspose !== 0 && <button type="button" className="stage__tool" onClick={() => setChordTranspose(0)}>Reset</button>}
+                    </div>
+                    <div className="stage__group">
+                    <span className="stage__label">CAPO</span>
+                    <div className="stepper">
+                      <button type="button" aria-label="Capo down" onClick={() => setCapo((c) => Math.max(0, c - 1))}>−</button>
+                      <span>{capo || '–'}</span>
+                      <button type="button" aria-label="Capo up" onClick={() => setCapo((c) => Math.min(11, c + 1))}>+</button>
+                    </div>
+                    </div>
+                    <div className="stage__group">
+                    <button type="button" className="stage__tool" aria-label="Smaller text" onClick={() => changeFont(-2)}>A−</button>
+                    <button type="button" className="stage__tool" aria-label="Larger text" onClick={() => changeFont(2)}>A+</button>
+                    <button type="button" className="stage__tool" aria-label="Reset transpose, capo and text size" disabled={!edited}
+                      onClick={() => { setChordTranspose(0); setCapo(0); setFontSize(16); try { localStorage.removeItem('stageChordFont') } catch { /* private mode */ } }}>↺</button>
+                    <button type="button" className="stage__tool" aria-pressed={twoCol} onClick={toggleTwoCol}>
+                      {twoCol ? '1 column' : '2 columns'}
+                    </button>
+                    <button type="button" className="stage__tool" aria-label="Print chord sheet" onClick={printChords}>Print</button>
+                    </div>
+                    <div className="stage__group">
+                    <button type="button" className="stage__tool stage__tool--go" aria-pressed={scrolling}
+                      onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶ Auto-scroll'}</button>
+                    <div className="stepper">
+                      <button type="button" aria-label="Slower scroll" onClick={() => setSpeed((s) => Math.max(1, s - 1))}>−</button>
+                      <span>{speed}</span>
+                      <button type="button" aria-label="Faster scroll" onClick={() => setSpeed((s) => Math.min(10, s + 1))}>+</button>
+                    </div>
+                    </div>
+    </>
+  )
 
   return (
     <div ref={rootRef} className="stage" role="dialog" aria-modal="true" aria-label="Stage view"
@@ -295,47 +358,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
-            {showChords && (cur.chordSheet || cur.chordSheetImage) ? (
+            {showChords && !focusSheet && (cur.chordSheet || cur.chordSheetImage) ? (
               <>
                 {cur.chordSheet && (
                   <div className="stage__chordbar">
-                    <div className="stage__group">
-                    <span className="stage__label">TRANSPOSE</span>
-                    <div className="stepper">
-                      <button type="button" aria-label="Transpose chords down" onClick={() => setChordTranspose((t) => Math.max(-11, t - 1))}>−</button>
-                      <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
-                      <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
-                    </div>
-                    {shownKey && <b className="stage__keynow">{shownKey}</b>}
-                    {chordTranspose !== 0 && <button type="button" className="stage__tool" onClick={() => setChordTranspose(0)}>Reset</button>}
-                    </div>
-                    <div className="stage__group">
-                    <span className="stage__label">CAPO</span>
-                    <div className="stepper">
-                      <button type="button" aria-label="Capo down" onClick={() => setCapo((c) => Math.max(0, c - 1))}>−</button>
-                      <span>{capo || '–'}</span>
-                      <button type="button" aria-label="Capo up" onClick={() => setCapo((c) => Math.min(11, c + 1))}>+</button>
-                    </div>
-                    </div>
-                    <div className="stage__group">
-                    <button type="button" className="stage__tool" aria-label="Smaller text" onClick={() => changeFont(-2)}>A−</button>
-                    <button type="button" className="stage__tool" aria-label="Larger text" onClick={() => changeFont(2)}>A+</button>
-                    <button type="button" className="stage__tool" aria-label="Reset transpose, capo and text size" disabled={!edited}
-                      onClick={() => { setChordTranspose(0); setCapo(0); setFontSize(16); try { localStorage.removeItem('stageChordFont') } catch { /* private mode */ } }}>↺</button>
-                    <button type="button" className="stage__tool" aria-pressed={twoCol} onClick={toggleTwoCol}>
-                      {twoCol ? '1 column' : '2 columns'}
-                    </button>
-                    <button type="button" className="stage__tool" aria-label="Print chord sheet" onClick={printChords}>Print</button>
-                    </div>
-                    <div className="stage__group">
-                    <button type="button" className="stage__tool stage__tool--go" aria-pressed={scrolling}
-                      onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶ Auto-scroll'}</button>
-                    <div className="stepper">
-                      <button type="button" aria-label="Slower scroll" onClick={() => setSpeed((s) => Math.max(1, s - 1))}>−</button>
-                      <span>{speed}</span>
-                      <button type="button" aria-label="Faster scroll" onClick={() => setSpeed((s) => Math.min(10, s + 1))}>+</button>
-                    </div>
-                    </div>
+                    {chordTools}
                   </div>
                 )}
                 {cur.chordSheetImage && (
@@ -444,6 +471,36 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           </div>
         </footer>
       </div>
+
+      {focusSheet && cur && (
+        <div className="stage__sheet">
+          <div className={'stage__sheetbar' + (barShown ? '' : ' stage__sheetbar--hidden')} onPointerDownCapture={wakeBar}>
+            <div className="stage__sheethead">
+              <button type="button" className="stage__tool" aria-label="Previous song" disabled={index === 0} onClick={() => go(-1)}>‹</button>
+              <b className="stage__sheettitle">{cur.stageTitle}</b>
+              <button type="button" className="stage__tool" aria-label="Next song" disabled={!next} onClick={() => go(1)}>›</button>
+              {fsSupported && (
+                <button type="button" className="stage__tool" aria-label={fsActive ? 'Exit full screen' : 'Full screen'} onClick={toggleFullscreen}>
+                  {fsActive ? '⤢' : '⛶'}
+                </button>
+              )}
+              <button type="button" className="stage__tool" onClick={() => setShowChords(false)}>Hide chords</button>
+            </div>
+            <div className="stage__chordbar">{chordTools}</div>
+          </div>
+          {!barShown && <button type="button" className="stage__sheetpeek" aria-label="Show controls" onClick={wakeBar}>☰</button>}
+          <div ref={chordsRef} className={`stage__chords stage__chords--focus${twoCol ? ' stage__chords--two' : ''}`}
+            style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}
+            onClick={toggleBar}>
+            {chordLines.map((line, i) => (
+              <div key={i} className={isChordLine(line) ? 'stage__cl stage__cl--chord'
+                : /^\s*\[.*\]\s*$/.test(line) ? 'stage__cl stage__cl--section' : 'stage__cl'}>
+                {line || ' '}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
