@@ -3,14 +3,15 @@ import { NOTE_ALIASES, NOTE_NAMES } from './music'
 /** Chord suffixes we recognise, longest first so e.g. "maj7" wins over "maj". */
 const QUALITY =
   'maj7|maj9|maj13|maj|mmaj7|madd9|m7b5|m7#5|min7|min|m6|m7|m9|m11|m13|m|' +
-  'dim7|dim|aug|sus4|sus2|sus|add9|add11|add2|6|7|9|11|13|b5|#5|b9|#9|\\+|°'
+  'dim7|dim|aug|sus4|sus2|sus|add9|add11|add2|add4|M7|M9|M11|M13|M|Δ7|Δ|ø7|ø|alt|5|6|7|9|11|13|2|4|' +
+  '[#b♯♭](?:5|9|11|13)|\\([#b♯♭+-]?(?:add)?\\d+\\)|\\(maj7\\)|\\+|°'
 
 const CHORD_RE = new RegExp(`^([A-G])([#b♯♭]?)((?:${QUALITY})*)(?:/([A-G])([#b♯♭]?))?$`)
 
 /** A section label like "Intro:" at the start of a line, kept as-is. */
 const LABEL_RE = /^[A-Za-z]+:$/
 /** Repeat counts and bar separators in a chord line, e.g. "x4", "×2", "|", "--", "-", kept as-is. */
-const DECORATION_RE = /^(x\d+|×\d+|\|+|-+)$/i
+const DECORATION_RE = /^(x\d+|×\d+|\|+|-+|N\.?C\.?|%)$/i
 
 /** Splits a whitespace-delimited token into its bar/dash decorations and chord-ish pieces, so
  * e.g. "|F#m" (a bar butted up against the chord, common in intro/interlude bar notation) becomes
