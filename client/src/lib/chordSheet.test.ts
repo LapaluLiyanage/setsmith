@@ -91,3 +91,16 @@ describe('wider chord vocabulary', () => {
     expect(isChordLine('Be a good dad')).toBe(false)
   })
 })
+
+describe('slash chords with qualities and extras', () => {
+  it.each(['F/Fmaj7', 'C/Cmaj7', 'C/E/Am', 'Dm/(Dm7)', 'D7/F#dim', 'A/A7'])('%s is a chord', (c) => {
+    expect(isChordLine(`${c} G`)).toBe(true)
+  })
+  it('treats // as a decoration', () => {
+    expect(isChordLine('E  | C#m  | Bm  | E  //')).toBe(true)
+  })
+  it('transposes every bass part', () => {
+    expect(transposeChord('C/E/Am', 2)).toBe('D/F♯/Bm')
+    expect(transposeChord('Dm/(Dm7)', 2)).toBe('Em/(Em7)')
+  })
+})
