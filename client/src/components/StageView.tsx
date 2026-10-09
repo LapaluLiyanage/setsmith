@@ -1,7 +1,7 @@
 import { gsap } from 'gsap'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { reducedMotion } from '../lib/motion'
-import { transposeChordSheet } from '../lib/chordSheet'
+import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSheet'
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
@@ -88,6 +88,17 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     try { localStorage.setItem('stageChordCols', v ? '1' : '2') } catch { /* private mode */ }
     return !v
   })
+  const [fontSize, setFontSize] = useState(() => {
+    try { return Number(localStorage.getItem('stageChordFont')) || 16 } catch { return 16 }
+  })
+  const changeFont = (d: number) => setFontSize((f) => {
+    const n = Math.max(10, Math.min(40, f + d))
+    try { localStorage.setItem('stageChordFont', String(n)) } catch { /* private mode */ }
+    return n
+  })
+  const [scrolling, setScrolling] = useState(false)
+  const [speed, setSpeed] = useState(4)
+  const chordsRef = useRef<HTMLDivElement>(null)
   const [imgZoom, setImgZoom] = useState(1)
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const [noteDraft, setNoteDraft] = useState('')
@@ -110,6 +121,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const canControl = !cloud.readOnly
 
   const cur = list[Math.min(index, list.length - 1)]
+  const chordLines = useMemo(() => {
+    if (!cur?.chordSheet) return []
+    const shift = chordTranspose - capo
+    return (shift ? transposeChordSheet(cur.chordSheet, shift) : cur.chordSheet).split('\n')
+  }, [cur?.chordSheet, chordTranspose, capo])
   const next = list[index + 1]
   const liveIndex = synced && cloud.nowPlaying?.showId === show.id
     ? list.findIndex((s) => s.itemId === cloud.nowPlaying!.itemId) : -1
@@ -157,7 +173,39 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1) }, [index])
+  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
+
+  // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
+  // because scrollTop rounds; stops by itself at the bottom.
+  useEffect(() => {
+    const el = chordsRef.current
+    if (!scrolling || !el) return
+    let raf = 0, last = performance.now(), pos = el.scrollTop
+    const tick = (t: number) => {
+      pos += ((t - last) / 1000) * speed * 8
+      last = t
+      el.scrollTop = pos
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) { setScrolling(false); return }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [scrolling, speed, showChords, index])
+
+  function printChords() {
+    if (!cur) return
+    const w = window.open('', '_blank')
+    if (!w) return
+    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
+    w.document.write(`<title>${esc(cur.stageTitle)}</title><h2>${esc(cur.stageTitle)}</h2><pre style="font:13px/1.5 monospace">${esc(chordLines.join('\n'))}</pre>`)
+    w.document.close()
+    w.print()
+  }
+
+  const shift = chordTranspose - capo
+  const keyLabel = cur?.key ? cur.key.replace(' major', '').replace(' minor', 'm') : null
+  const shownKey = keyLabel ? (shift ? transposeChord(keyLabel, shift) : keyLabel) : null
+  const edited = chordTranspose !== 0 || capo !== 0 || fontSize !== 16
 
   // Your own private note for this song -- nobody else can see it, and it's stored separately
   // from the shared setlist, so it never syncs to anyone else's screen.
@@ -258,6 +306,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       <span>{chordTranspose > 0 ? `+${chordTranspose}` : chordTranspose}</span>
                       <button type="button" aria-label="Transpose chords up" onClick={() => setChordTranspose((t) => Math.min(11, t + 1))}>+</button>
                     </div>
+                    {shownKey && <b className="stage__keynow">{shownKey}</b>}
                     {chordTranspose !== 0 && <button type="button" className="stage__yt" onClick={() => setChordTranspose(0)}>Reset</button>}
                     <span className="stage__label">CAPO</span>
                     <div className="stepper">
@@ -265,9 +314,21 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       <span>{capo || '–'}</span>
                       <button type="button" aria-label="Capo up" onClick={() => setCapo((c) => Math.min(11, c + 1))}>+</button>
                     </div>
+                    <button type="button" className="stage__yt" aria-label="Smaller text" onClick={() => changeFont(-2)}>A−</button>
+                    <button type="button" className="stage__yt" aria-label="Larger text" onClick={() => changeFont(2)}>A+</button>
+                    <button type="button" className="stage__yt" aria-label="Reset transpose, capo and text size" disabled={!edited}
+                      onClick={() => { setChordTranspose(0); setCapo(0); setFontSize(16); try { localStorage.removeItem('stageChordFont') } catch { /* private mode */ } }}>↺</button>
                     <button type="button" className="stage__yt stage__colbtn" aria-pressed={twoCol} onClick={toggleTwoCol}>
                       {twoCol ? '1 column' : '2 columns'}
                     </button>
+                    <button type="button" className="stage__yt" aria-label="Print chord sheet" onClick={printChords}>Print</button>
+                    <button type="button" className={'stage__yt' + (scrolling ? ' stage__yt--play' : '')} aria-pressed={scrolling}
+                      onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶ Auto-scroll'}</button>
+                    <div className="stepper">
+                      <button type="button" aria-label="Slower scroll" onClick={() => setSpeed((s) => Math.max(1, s - 1))}>−</button>
+                      <span>{speed}</span>
+                      <button type="button" aria-label="Faster scroll" onClick={() => setSpeed((s) => Math.min(10, s + 1))}>+</button>
+                    </div>
                   </div>
                 )}
                 {cur.chordSheetImage && (
@@ -288,9 +349,15 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   </div>
                 )}
                 {cur.chordSheet && (
-                  <pre className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}>
-                    {chordTranspose - capo ? transposeChordSheet(cur.chordSheet, chordTranspose - capo) : cur.chordSheet}
-                  </pre>
+                  <div ref={chordsRef} className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}
+                    style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
+                    {chordLines.map((line, i) => (
+                        <div key={i} className={isChordLine(line) ? 'stage__cl stage__cl--chord'
+                          : /^\s*\[.*\]\s*$/.test(line) ? 'stage__cl stage__cl--section' : 'stage__cl'}>
+                          {line || ' '}
+                        </div>
+                      ))}
+                  </div>
                 )}
               </>
             ) : (
