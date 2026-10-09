@@ -98,7 +98,6 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   })
   const [scrolling, setScrolling] = useState(false)
   const [speed, setSpeed] = useState(4)
-  const chordsRef = useRef<HTMLDivElement>(null)
   const [imgZoom, setImgZoom] = useState(1)
   const [showVideo, setShowVideo] = useState<0 | 1 | 2>(0)
   const [noteDraft, setNoteDraft] = useState('')
@@ -178,7 +177,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
   // because scrollTop rounds; stops by itself at the bottom.
   useEffect(() => {
-    const el = chordsRef.current
+    const el = rootRef.current
     if (!scrolling || !el) return
     let raf = 0, last = performance.now(), pos = el.scrollTop
     const tick = (t: number) => {
@@ -349,7 +348,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   </div>
                 )}
                 {cur.chordSheet && (
-                  <div ref={chordsRef} className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}
+                  <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}
                     style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
                     {chordLines.map((line, i) => (
                         <div key={i} className={isChordLine(line) ? 'stage__cl stage__cl--chord'
