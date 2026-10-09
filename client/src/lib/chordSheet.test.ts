@@ -81,3 +81,13 @@ describe('transposeChordSheet', () => {
     expect(transposeChordSheet('| G | D | Em | C |', 2)).toBe('| A | E | F♯m | D |')
   })
 })
+
+describe('wider chord vocabulary', () => {
+  it.each(['A5', 'C2', 'Cmaj7#11', 'E7#9', 'D6', 'CM7', 'CΔ7', 'Bø7', 'Am(add9)', 'G7(b9)', 'Dsus4', 'Cadd4', 'F#m7b5', 'C7#11', 'G13'])('%s is a chord', (c) => {
+    expect(isChordLine(`${c} G`)).toBe(true)
+  })
+  it('allows N.C. on a chord line and still rejects lyrics', () => {
+    expect(isChordLine('N.C. Am G')).toBe(true)
+    expect(isChordLine('Be a good dad')).toBe(false)
+  })
+})
