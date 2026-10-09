@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { buildExport, pdfFileName, toShareText } from '../lib/exportData'
+import { buildExport, chordPdfFileName, pdfFileName, toShareText } from '../lib/exportData'
+import { buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { useDrawerIn } from '../lib/motion'
 import { useStore } from '../state/store'
@@ -12,16 +13,24 @@ export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void
   const scrimRef = useRef<HTMLDivElement>(null)
   useDrawerIn(drawerRef, scrimRef)
   const data = useMemo(() => buildExport(show, state.songs, state.members, state.bandName), [show, state.songs, state.members, state.bandName])
+  const [mode, setMode] = useState<'list' | 'chords'>('list')
+  const chordSongs = useMemo(
+    () => buildStageList(show, state.songs, state.members).filter((s) => s.chordSheet || s.chordSheetImage),
+    [show, state.songs, state.members],
+  )
   const [status, setStatus] = useState<Status>({ kind: 'working' })
   const [note, setNote] = useState<string | null>(null)
-  const fileName = pdfFileName(data)
+  const fileName = mode === 'chords' ? chordPdfFileName(data) : pdfFileName(data)
   const shareText = toShareText(data)
 
   useEffect(() => {
     let url: string | null = null
     let cancelled = false
+    setStatus({ kind: 'working' })
     import('../pdf/renderPdf')
-      .then(({ renderSetlistPdf }) => renderSetlistPdf(data))
+      .then(({ renderSetlistPdf, renderChordSheetsPdf }) => (mode === 'chords'
+        ? renderChordSheetsPdf(chordSongs, data.bandName, data.showName)
+        : renderSetlistPdf(data)))
       .then((blob) => {
         if (cancelled) return
         url = URL.createObjectURL(blob)
@@ -32,7 +41,7 @@ export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void
       cancelled = true
       if (url) URL.revokeObjectURL(url)
     }
-  }, [data])
+  }, [data, mode, chordSongs])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -95,8 +104,17 @@ export function ExportPanel({ show, onClose }: { show: Show; onClose: () => void
             </p>
           )}
 
+          <div className="export-actions" role="group" aria-label="What to export">
+            <button className={'pill' + (mode === 'list' ? ' pill--accent' : '')} aria-pressed={mode === 'list'} onClick={() => setMode('list')}>Song list</button>
+            <button className={'pill' + (mode === 'chords' ? ' pill--accent' : '')} aria-pressed={mode === 'chords'}
+              disabled={chordSongs.length === 0} onClick={() => setMode('chords')}
+              title={chordSongs.length === 0 ? 'None of the songs in this show have a chord sheet yet' : undefined}>
+              Chord sheets ({chordSongs.length})
+            </button>
+          </div>
+
           <div className="export-actions">
-            <button className="pill pill--accent" onClick={download} disabled={status.kind !== 'ready'}>Download PDF</button>
+            <button className="pill pill--accent" onClick={download} disabled={status.kind !== 'ready'}>{mode === 'chords' ? 'Download chord sheets PDF' : 'Download PDF'}</button>
             {canShareFile && <button className="pill" onClick={sharePdf}>Share PDF (WhatsApp, etc.)</button>}
             <a className="pill" href={mailto}>Email</a>
             <button className="pill" onClick={copyText}>Copy as text</button>

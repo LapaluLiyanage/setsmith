@@ -12,7 +12,7 @@ Font.register({
   fonts: [{ src: sinhalaRegular, fontWeight: 400 }, { src: sinhalaBold, fontWeight: 700 }],
 })
 const SINHALA = /[඀-෿]/
-const sf = (text: string | undefined, bold = false) =>
+export const sf = (text: string | undefined, bold = false) =>
   text && SINHALA.test(text) ? { fontFamily: 'NotoSinhala', fontWeight: bold ? 700 : 400 } : {}
 
 // Printed on paper and read on phones, so: white page, dark ink, one amber accent.

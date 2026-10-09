@@ -195,16 +195,6 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     return () => cancelAnimationFrame(raf)
   }, [scrolling, speed, showChords, index])
 
-  function printChords() {
-    if (!cur) return
-    const w = window.open('', '_blank')
-    if (!w) return
-    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
-    w.document.write(`<title>${esc(cur.stageTitle)}</title><h2>${esc(cur.stageTitle)}</h2><pre style="font:13px/1.5 monospace">${esc(chordLines.join('\n'))}</pre>`)
-    w.document.close()
-    w.print()
-  }
-
   const shift = chordTranspose - capo
   const keyLabel = cur?.key ? cur.key.replace(' major', '').replace(' minor', 'm') : null
   const shownKey = keyLabel ? (shift ? transposeChord(keyLabel, shift) : keyLabel) : null
@@ -269,6 +259,33 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusSheet, index])
 
+  // Group each chord line with the lyric under it, and turn blank lines into spacing before the next
+  // group: a group never splits across columns, and spacing at the top of a column is dropped, so
+  // both columns start flush at the top instead of with a blank gap.
+  const chordBody = useMemo(() => {
+    const kind = (l: string) => (isChordLine(l) ? 'stage__cl stage__cl--chord'
+      : /^s*[.*]s*$/.test(l) ? 'stage__cl stage__cl--section' : 'stage__cl')
+    const units: { key: number; gap: number; rows: { text: string; cls: string }[] }[] = []
+    let gap = 0
+    for (let i = 0; i < chordLines.length; i++) {
+      const line = chordLines[i]
+      if (!line.trim()) { gap++; continue }
+      const rows = [{ text: line, cls: kind(line) }]
+      const nextLine = chordLines[i + 1]
+      if (isChordLine(line) && nextLine !== undefined && nextLine.trim() && !isChordLine(nextLine) && !/^s*[.*]s*$/.test(nextLine)) {
+        rows.push({ text: nextLine, cls: kind(nextLine) })
+        i++
+      }
+      units.push({ key: i, gap: units.length ? gap : 0, rows })
+      gap = 0
+    }
+    return units.map((u) => (
+      <div key={u.key} className="stage__unit" style={u.gap ? { marginTop: `${u.gap * 1.6}em` } : undefined}>
+        {u.rows.map((r, j) => <div key={j} className={r.cls}>{r.text}</div>)}
+      </div>
+    ))
+  }, [chordLines])
+
   const chordTools = (
     <>
                     <div className="stage__group">
@@ -297,7 +314,6 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     <button type="button" className="stage__tool" aria-pressed={twoCol} onClick={toggleTwoCol}>
                       {twoCol ? '1 column' : '2 columns'}
                     </button>
-                    <button type="button" className="stage__tool" aria-label="Print chord sheet" onClick={printChords}>Print</button>
                     {!focusSheet && <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(true)}>⤢ Full screen</button>}
                     </div>
                     <div className="stage__group">
@@ -388,12 +404,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                 {cur.chordSheet && (
                   <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}`}
                     style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
-                    {chordLines.map((line, i) => (
-                        <div key={i} className={isChordLine(line) ? 'stage__cl stage__cl--chord'
-                          : /^\s*\[.*\]\s*$/.test(line) ? 'stage__cl stage__cl--section' : 'stage__cl'}>
-                          {line || ' '}
-                        </div>
-                      ))}
+                    {chordBody}
                   </div>
                 )}
               </>
@@ -497,15 +508,8 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               <button type="button" aria-label="Show controls" onClick={wakeBar}>☰</button>
             </div>
           )}
-          <div key={cur.itemId} ref={chordsRef} className={`stage__chords stage__chords--focus${twoCol ? ' stage__chords--two' : ''}`}
-            style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}
-            onClick={toggleBar}>
-            {chordLines.map((line, i) => (
-              <div key={i} className={isChordLine(line) ? 'stage__cl stage__cl--chord'
-                : /^\s*\[.*\]\s*$/.test(line) ? 'stage__cl stage__cl--section' : 'stage__cl'}>
-                {line || ' '}
-              </div>
-            ))}
+          <div key={cur.itemId} ref={chordsRef} className="stage__chords stage__chords--focus" style={{ fontSize }} onClick={toggleBar}>
+            <div className={'stage__cols' + (twoCol ? ' stage__cols--two' : '')}>{chordBody}</div>
           </div>
         </div>
       )}
