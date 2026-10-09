@@ -140,3 +140,7 @@ export function pdfFileName(data: ExportData): string {
   const slug = data.showName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   return `setlist-${slug || 'show'}.pdf`
 }
+
+export function chordPdfFileName(data: ExportData): string {
+  return pdfFileName(data).replace(/^setlist-/, 'chord-sheets-')
+}

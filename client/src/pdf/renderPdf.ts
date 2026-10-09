@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { createElement, type ReactElement } from 'react'
 import type { DocumentProps } from '@react-pdf/renderer'
 import type { ExportData } from '../lib/exportData'
+import type { StageSong } from '../lib/stage'
 import { SetlistPdf } from './SetlistPdf'
 
 // Loaded on demand (see ExportPanel) so the PDF engine isn't in the main bundle.
@@ -13,5 +14,11 @@ export async function renderSetlistPdf(data: ExportData): Promise<Blob> {
   )
   // SetlistPdf renders a <Document>, which is what pdf() needs; its props type just can't see through the wrapper.
   const doc = createElement(SetlistPdf, { data, qrCodes }) as unknown as ReactElement<DocumentProps>
+  return pdf(doc).toBlob()
+}
+
+export async function renderChordSheetsPdf(songs: StageSong[], bandName: string, showName: string): Promise<Blob> {
+  const { ChordSheetsPdf } = await import('./ChordSheetsPdf')
+  const doc = createElement(ChordSheetsPdf, { songs, bandName, showName }) as unknown as ReactElement<DocumentProps>
   return pdf(doc).toBlob()
 }

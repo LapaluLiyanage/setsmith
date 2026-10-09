@@ -609,3 +609,34 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
    "zooms" between songs or when transposing). A line too long for a column wraps instead of being cut off. */
 .stage__chords--focus.stage__chords--two .stage__cl { font-size: inherit; white-space: pre-wrap; overflow-wrap: anywhere; }
 .stage__chords--focus .stage__cl { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Chord focus toolbar as a floating glass pill at the bottom of the screen. */
+.stage__sheetbar {
+  top: auto; right: auto; bottom: max(14px, env(safe-area-inset-bottom)); left: 50%;
+  width: min(980px, calc(100% - 24px)); padding: 12px 14px; gap: 10px;
+  border: 1px solid rgba(255, 255, 255, .14); border-radius: 26px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .03)), rgba(20, 21, 19, .55);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7); backdrop-filter: blur(24px) saturate(1.7);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .18);
+  transform: translateX(-50%);
+}
+.stage__sheetbar--hidden { transform: translate(-50%, 150%); opacity: 0; }
+.stage__sheetbar .stage__tool, .stage__sheetbar .stepper { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .14); border-radius: 16px; }
+.stage__sheetbar .stage__tool--go, .stage__sheetbar .stage__tool[aria-pressed="true"] { border-color: rgba(226, 242, 74, .7); background: rgba(226, 242, 74, .14); }
+.stage__sheetbar .stage__chordbar { margin-top: 0; }
+.stage__sheetpeek { top: auto; bottom: max(14px, env(safe-area-inset-bottom)); right: 14px; }
+.stage__sheetpeek button { background: rgba(20, 21, 19, .55); border-color: rgba(255, 255, 255, .16); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0, 0, 0, .45); }
+/* Room under the last lines so the pill never hides them. */
+.stage__chords--focus { padding-bottom: 170px; }
+
+/* Chord groups (chord line + its lyric) never split across columns. In focus view the two columns sit
+   close together in the middle of wide screens instead of being pushed to the far edges. */
+.stage__unit { break-inside: avoid; }
+.stage__chords--focus.stage__chords--two { column-gap: 56px; padding-inline: max(18px, calc(50% - 520px)); }
+.stage__chords--focus:not(.stage__chords--two) { padding-inline: max(18px, calc(50% - 400px)); }
+
+/* Full-screen sheet: the scroller holds an auto-height columns box, so the columns balance (exactly two,
+   never a third spilling sideways) and the sheet scrolls vertically. No wrapping: lines keep their alignment. */
+.stage__chords--focus.stage__chords--two, .stage__chords--focus:not(.stage__chords--two) { padding-inline: max(18px, calc(50% - 700px)); }
+.stage__chords--focus .stage__cl { white-space: pre; overflow-wrap: normal; }
+.stage__cols--two { column-count: 2; column-gap: 56px; column-fill: balance; column-rule: 1px solid #2a2b28; }
