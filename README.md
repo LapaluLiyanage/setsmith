@@ -5,6 +5,35 @@ Setlist planner for live bands, built by **FASTUNES**.
 Book a show → split it into sessions → add songs from YouTube → assign singers → see each song's
 BPM and key → rearrange with drag-and-drop or quick swap → send the band a PDF with the YouTube links.
 
+Live at **https://setsmith.lapalu.me/** (installable as a PWA, and wrapped for iOS and Android with Capacitor).
+
+## Screenshots
+
+Shown with a real show, **TD2026** (Faculty of Applied Science, RUSL): 4 sessions, 38 songs, 17 singers.
+
+**Setlist editor**: sessions with target times and live totals, singer chips, key and BPM per song,
+key-jump warnings between songs, an energy map, and a floating bar with Rehearse, Add song and Export PDF.
+
+![Setlist editor](docs/screenshots/setlist.jpg)
+
+**Stage view**: the gig screen. Current song in huge type with singer, key (and Camelot code), BPM and a private note,
+the next song below, a progress strip across the whole night, and a Chords button for the full-screen chord sheet.
+
+![Stage view](docs/screenshots/stage-view.jpg)
+
+**Song library**: every song the band has played, filterable by singer and language, with usual singer, BPM, key
+and how many shows it has been played in. One tap adds a song to the current show.
+
+![Song library](docs/screenshots/library.jpg)
+
+## What Setsmith does
+
+Setsmith replaces the WhatsApp-and-spreadsheet routine of planning a gig. A manager books a show, splits the night
+into sessions (dinner, dance, encore…), fills them with songs and gives each song a singer. The app keeps the
+running time against the booked slot, flags awkward key jumps and singers who carry too many songs in a row, and
+can reorder a session by tempo so the energy builds and cools naturally. On the night, the same data becomes a
+phone-friendly Stage view with chord sheets, and afterwards a PDF goes to the band.
+
 ## What works now
 
 - Shows with date, venue and booked slot; sessions with target times and live totals (warns when over)
@@ -19,6 +48,9 @@ BPM and key → rearrange with drag-and-drop or quick swap → send the band a P
 - Undo (button or Ctrl+Z)
 - **Stage view** for the gig: current song in huge type with singer, key, BPM and notes, a dot pulsing on the beat,
   next song below; swipe, tap or use arrow keys / a page-turner pedal; keeps the phone screen awake
+- **Chord sheets**: open a song's chords full-screen from Stage view (auto-hiding toolbar, balanced two-column layout)
+  and export them as a PDF
+- **Song library** with search and filters, **Rehearse** mode, light/dark theme, and iOS/Android apps via Capacitor
 - Band members with roles (manager / editor / viewer)
 - **PDF export**: a table per session (singer, BPM, key with Camelot code, transpose, notes, time),
   song titles link to YouTube, a QR code per song for printed copies, songs-per-singer summary.
