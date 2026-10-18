@@ -69,6 +69,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 0; 
   display: grid; place-items: center; font-size: 12px; text-decoration: none; flex: none;
 }
 .icon-btn--dark { background: var(--dk); color: var(--dki); border-color: var(--dk); font-size: 9px; }
+.icon-btn--tick { font-size: 14px; }
+.icon-btn--tick.is-on { background: var(--ac); border-color: var(--ac); color: var(--tx); font-weight: 700; }
+.icon-btn--tick:disabled:not(.is-on) { opacity: .4; }
 .icon-btn--lg { width: 44px; height: 44px; font-size: 16px; }
 
 /* App shell */
