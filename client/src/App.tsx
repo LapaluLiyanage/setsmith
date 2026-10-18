@@ -117,7 +117,8 @@ export default function App() {
             <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
-            {canInstall && <button className="nav__item nav__item--keep" onClick={install}>⭳ Install app</button>}
+            {cloud.configured && <button className="nav__item nav__item--keep" onClick={cloud.signOut}>Log out</button>}
+            {canInstall &&<button className="nav__item nav__item--keep" onClick={install}>⭳ Install app</button>}
           </nav>
           <select id="show-picker" className="show-select" aria-label="Choose show" value={show?.id ?? ''}
             onChange={(e) => dispatch({ type: 'selectShow', showId: e.target.value })}>

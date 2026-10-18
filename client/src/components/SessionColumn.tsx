@@ -155,6 +155,7 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                     onPlay={(part) => onPlay(part === 2 ? partKey : item.id)}
                     onTap={() => onTap(item.id)}
                     onEdit={() => onEditItem(item.id)}
+                    onPracticed={(practiced) => dispatch({ type: 'updateItem', itemId: item.id, patch: { practiced } })}
                     onSinger={(singerId) => {
                       dispatch({ type: 'updateItem', itemId: item.id, patch: { singerId } })
                       notify(singerId ? `${singerBadge(members, singerId).name} now sings “${song.title}”` : `“${song.title}” has no singer`)

@@ -18,12 +18,13 @@ interface Props {
   onPlay: (part: 1 | 2) => void
   onTap: () => void
   onEdit: () => void
+  onPracticed: (practiced: boolean) => void
   onSinger: (singerId: string | null) => void
 }
 
 const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
 
-export function SongRow({ item, song, position, members, selected, playing, readOnly, onPlay, onTap, onEdit, onSinger }: Props) {
+export function SongRow({ item, song, position, members, selected, playing, readOnly, onPlay, onTap, onEdit, onPracticed, onSinger }: Props) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -129,6 +130,10 @@ export function SongRow({ item, song, position, members, selected, playing, read
       <div className="song__side">
         <span className="song__dur">{formatDuration(song.durationSec)}</span>
         <div className="song__actions">
+          <button type="button" className={`icon-btn icon-btn--tick${item.practiced ? ' is-on' : ''}`} aria-pressed={!!item.practiced}
+            disabled={readOnly} title={item.practiced ? 'Practiced — click to unmark' : 'Mark as practiced'}
+            aria-label={`${item.practiced ? 'Unmark' : 'Mark'} ${song.title} as practiced`}
+            onClick={(e) => { stop(e); onPracticed(!item.practiced) }}>✓</button>
           {song.youtubeId2 ? (
             <>
               <button type="button" className={`icon-btn${playing === 1 ? ' icon-btn--dark' : ''}`} aria-pressed={playing === 1}

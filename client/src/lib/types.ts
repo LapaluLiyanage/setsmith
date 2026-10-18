@@ -54,6 +54,8 @@ export interface SetlistItem {
   /** Semitones to shift from the original key (e.g. -2). */
   transpose: number
   notes: string
+  /** Ticked off once the band has rehearsed this song. Shared with the band. */
+  practiced?: boolean
 }
 
 export interface Session {
