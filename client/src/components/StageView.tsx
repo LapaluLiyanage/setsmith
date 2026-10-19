@@ -2,12 +2,14 @@ import { gsap } from 'gsap'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { reducedMotion } from '../lib/motion'
 import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSheet'
+import { findItem } from '../lib/setlist'
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
 import { keepScreenAwake } from '../lib/native'
 import { loadYouTubeApi } from '../lib/ytPlayer'
 import { useStore } from '../state/store'
+import { SongDrawer } from './SongDrawer'
 import { SongPlayer } from './SongPlayer'
 
 const SWIPE_PX = 50
@@ -80,6 +82,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [capo, setCapo] = useState(0)
   const [twoCol, setTwoCol] = useState(() => {
@@ -123,8 +126,17 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // Synced shows: everyone follows the shared pointer; only managers/editors can move it.
   const synced = cloud.configured && !!cloud.band
   const canControl = !cloud.readOnly
-
   const cur = list[Math.min(index, list.length - 1)]
+  const editTarget = (() => {
+    if (!editing || !cur) return null
+    const loc = findItem(show.sessions, cur.itemId)
+    if (!loc) return null
+    const session = show.sessions[loc.sessionIndex]
+    const item = session.items[loc.itemIndex]
+    const song = state.songs[item.songId]
+    return song ? { mode: 'edit' as const, item, song, sessionName: session.name } : null
+  })()
+
   const chordLines = useMemo(() => {
     if (!cur?.chordSheet) return []
     const shift = chordTranspose - capo
@@ -161,6 +173,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
         if (e.key === 'Escape') t.blur()
         return
       }
+      if (editing) return
       if (e.key === 'Escape') onClose()
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(1) }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1) }
@@ -329,10 +342,16 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       <button type="button" aria-label="Faster scroll" onClick={() => setSpeed((s) => Math.min(10, s + 1))}>+</button>
                     </div>
                     </div>
+                    {canControl && (
+                      <div className="stage__group">
+                      <button type="button" className="stage__tool stage__tool--go" onClick={() => setEditing(true)}>✎ Edit</button>
+                      </div>
+                    )}
     </>
   )
 
   return (
+    <>
     <div ref={rootRef} className="stage" role="dialog" aria-modal="true" aria-label="Stage view"
       onPointerDown={onPointerDown} onPointerUp={onPointerUp}>
       <div className="stage__col">
@@ -518,5 +537,9 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
         </div>
       )}
     </div>
+    {editTarget && (
+      <SongDrawer key={editTarget.item.id} target={editTarget} members={state.members} onClose={() => setEditing(false)} notify={() => {}} />
+    )}
+    </>
   )
 }
