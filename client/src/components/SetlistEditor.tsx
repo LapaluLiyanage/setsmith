@@ -11,6 +11,8 @@ import type { Session, Show } from '../lib/types'
 import { loadYouTubeApi } from '../lib/ytPlayer'
 import { newId, useStore } from '../state/store'
 import type { Theme } from '../state/theme'
+import { isShowEnded } from '../lib/showPhotos'
+import { AlbumCard } from './AlbumCard'
 import { EnergyMap } from './EnergyMap'
 import { SessionColumn } from './SessionColumn'
 import { showSingers, singerBadge } from '../lib/singers'
@@ -315,6 +317,10 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
 
         <EnergyMap sessions={sessions} songs={state.songs} theme={theme} />
       </div>
+
+      {cloud.configured && cloud.band && isShowEnded(show.date) && (
+        <div style={{ padding: '0 24px' }}><AlbumCard show={show} bandId={cloud.band.id} /></div>
+      )}
 
       <DndContext sensors={sensors} collisionDetection={closestCorners}
         onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={onDragCancel}>

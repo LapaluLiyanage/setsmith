@@ -276,3 +276,30 @@ using (
 create policy "public read chord sheets" on storage.objects
 for select to public
 using (bucket_id = 'chord-sheets');
+
+-- Show photo albums: a private bucket, path "<band_id>/<show_id>/<file>". Any band member can read
+-- (the app asks for short-lived signed links); only managers and editors can add or delete.
+insert into storage.buckets (id, name, public)
+values ('show-photos', 'show-photos', false)
+on conflict (id) do nothing;
+
+create policy "band members read show photos" on storage.objects
+for select to authenticated
+using (
+  bucket_id = 'show-photos'
+  and my_role(((storage.foldername(name))[1])::uuid) is not null
+);
+
+create policy "band editors upload show photos" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'show-photos'
+  and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
+);
+
+create policy "band editors delete show photos" on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'show-photos'
+  and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
+);
