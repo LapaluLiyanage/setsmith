@@ -78,11 +78,12 @@ function useFullscreen(ref: { current: HTMLElement | null }) {
 }
 
 export function StageView({ show, onClose }: { show: Show; onClose: () => void }) {
-  const { state, cloud } = useStore()
+  const { state, dispatch, cloud } = useStore()
   const list = useMemo(() => buildStageList(show, state.songs, state.members), [show, state.songs, state.members])
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [sheetDraft, setSheetDraft] = useState<string | null>(null)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [capo, setCapo] = useState(0)
   const [twoCol, setTwoCol] = useState(() => {
@@ -127,6 +128,17 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const synced = cloud.configured && !!cloud.band
   const canControl = !cloud.readOnly
   const cur = list[Math.min(index, list.length - 1)]
+  // The sheet on screen is transposed for the set; edits go to the song's stored sheet.
+  const rawSong = (() => {
+    if (!cur) return null
+    const loc = findItem(show.sessions, cur.itemId)
+    return loc ? state.songs[show.sessions[loc.sessionIndex].items[loc.itemIndex].songId] ?? null : null
+  })()
+  const startSheetEdit = () => { setFullSheet(false); setScrolling(false); setSheetDraft(rawSong?.chordSheet ?? '') }
+  const saveSheet = () => {
+    if (rawSong && sheetDraft !== null) dispatch({ type: 'updateSong', songId: rawSong.id, patch: { chordSheet: sheetDraft.trim() ? sheetDraft : null } })
+    setSheetDraft(null)
+  }
   const editTarget = (() => {
     if (!editing || !cur) return null
     const loc = findItem(show.sessions, cur.itemId)
@@ -190,7 +202,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
+  useEffect(() => { setSheetDraft(null); setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
 
   // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
   // because scrollTop rounds; stops by itself at the bottom.
@@ -344,7 +356,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     </div>
                     {canControl && (
                       <div className="stage__group">
-                      <button type="button" className="stage__tool stage__tool--go" onClick={() => setEditing(true)}>✎ Edit</button>
+                      <button type="button" className="stage__tool stage__tool--go" onClick={startSheetEdit}>✎ Edit</button>
                       </div>
                     )}
     </>
@@ -397,11 +409,6 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     {showChords ? 'Hide chords' : 'Chords'}
                   </button>
                 )}
-                {canControl && (
-                  <button type="button" className="stage__chordtoggle" onClick={() => setEditing(true)}>
-                    {cur.chordSheet || cur.chordSheetImage ? '✎ Edit chords' : '+ Add chords'}
-                  </button>
-                )}
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
@@ -429,7 +436,17 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       style={imgZoom > 1 ? { width: `${imgZoom * 100}%`, maxWidth: 'none' } : undefined} />
                   </div>
                 )}
-                {cur.chordSheet && (
+                {sheetDraft !== null && (
+                  <div className="stage__edit">
+                    <textarea className="stage__editarea" value={sheetDraft} spellCheck={false} autoFocus
+                      aria-label="Chord sheet text" onChange={(e) => setSheetDraft(e.target.value)} />
+                    <div className="stage__group">
+                      <button type="button" className="stage__tool stage__tool--go" onClick={saveSheet}>✓ Save</button>
+                      <button type="button" className="stage__tool" onClick={() => setSheetDraft(null)}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+                {cur.chordSheet && sheetDraft === null && (
                   <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}${fontSize !== 16 ? ' stage__chords--manual' : ''}`}
                     style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
                     {chordBody}

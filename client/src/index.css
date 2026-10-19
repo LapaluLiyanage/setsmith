@@ -647,3 +647,6 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 
 /* Once A-/A+ has set a size, use exactly that in two columns; the fit-to-column shrink only applies at the default size. */
 .stage__chords--two.stage__chords--manual .stage__cl { font-size: inherit; }
+
+.stage__edit { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.stage__editarea { width: 100%; min-height: 55vh; padding: 16px 18px; border-radius: 20px; border: 1px solid #2a2b28; background: #161715; color: #f4f4ef; font: 500 15px/1.5 var(--mono); resize: vertical; white-space: pre; overflow: auto; user-select: text; }
