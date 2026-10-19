@@ -650,3 +650,6 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 
 .stage__edit { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .stage__editarea { width: 100%; min-height: 55vh; padding: 16px 18px; border-radius: 20px; border: 1px solid #2a2b28; background: #161715; color: #f4f4ef; font: 500 15px/1.5 var(--mono); resize: vertical; white-space: pre; overflow: auto; user-select: text; }
+
+.stage__keyselect { width: 100%; height: 44px; border-radius: 14px; border: 1px solid #e2f24a; background: #161715; color: #f4f4ef; font: 600 16px var(--font); padding: 0 10px; }
+.stage__keyedit { align-self: flex-start; margin-top: 6px; }
