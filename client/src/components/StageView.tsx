@@ -156,6 +156,18 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     dispatch({ type: 'updateSong', songId: rawSong.id, patch: { key } })
     setKeyEdit(false)
   }
+  // Bake the on-screen transpose/capo into the stored sheet so it becomes the sheet that's played.
+  // A plain transpose also moves the song's key; a capo only changes the shapes, not the sound.
+  const savePlayingSheet = () => {
+    if (!rawSong?.chordSheet) return
+    const shiftNow = chordTranspose - capo
+    if (!shiftNow) return
+    const patch: Partial<typeof rawSong> = { chordSheet: transposeChordSheet(rawSong.chordSheet, shiftNow) }
+    if (rawSong.key && chordTranspose) patch.key = transposeKey(rawSong.key, chordTranspose)
+    dispatch({ type: 'updateSong', songId: rawSong.id, patch })
+    setChordTranspose(0)
+    setCapo(0)
+  }
   const startSheetEdit = () => { setFullSheet(false); setScrolling(false); setSheetDraft(rawSong?.chordSheet ?? '') }
   const saveSheet = () => {
     if (rawSong && sheetDraft !== null) dispatch({ type: 'updateSong', songId: rawSong.id, patch: { chordSheet: sheetDraft.trim() ? sheetDraft : null } })
@@ -350,6 +362,10 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     </div>
                     {shownKey && <b className="stage__keynow">{shownKey}</b>}
                     {chordTranspose !== 0 && <button type="button" className="stage__tool" onClick={() => setChordTranspose(0)}>Reset</button>}
+                    {canControl && shift !== 0 && rawSong?.chordSheet && (
+                      <button type="button" className="stage__tool stage__tool--go" title="Keep this transposed sheet as the sheet that's played"
+                        onClick={savePlayingSheet}>💾 Save as playing sheet</button>
+                    )}
                     </div>
                     <div className="stage__group">
                     <span className="stage__label">CAPO</span>
