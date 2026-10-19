@@ -12,6 +12,8 @@ interface Props {
   song: Song
   position: number
   members: Member[]
+  /** Who can be picked as singer; defaults to every singer in `members`. */
+  singers?: Member[]
   selected: boolean
   playing: 0 | 1 | 2
   readOnly: boolean
@@ -24,7 +26,7 @@ interface Props {
 
 const shortKey = (text: string) => text.replace(' major', '').replace(' minor', 'm')
 
-export function SongRow({ item, song, position, members, selected, playing, readOnly, onPlay, onTap, onEdit, onPracticed, onSinger }: Props) {
+export function SongRow({ item, song, position, members, singers: pickable, selected, playing, readOnly, onPlay, onTap, onEdit, onPracticed, onSinger }: Props) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -40,7 +42,7 @@ export function SongRow({ item, song, position, members, selected, playing, read
   const badge = singerBadge(members, item.singerId)
   const badge2 = song.youtubeId2 && item.singerId2 ? singerBadge(members, item.singerId2) : null
   const coBadges = coSingerBadges(members, item)
-  const singers = members.filter((m) => m.isSinger)
+  const singers = pickable ?? members.filter((m) => m.isSinger)
   const played = song.key ? transposeKey(song.key, item.transpose) : null
   const stop = (e: { stopPropagation: () => void }) => e.stopPropagation()
 

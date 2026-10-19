@@ -21,6 +21,7 @@ interface Props {
   index: number
   songs: Record<string, Song>
   members: Member[]
+  singers?: Member[]
   /** Seconds into the show this session starts, for the rail clock. */
   startSec: number
   selectedId: string | null
@@ -33,7 +34,7 @@ interface Props {
   notify: (message: string) => void
 }
 
-export function SessionColumn({ session, index, songs, members, startSec, selectedId, playingId, readOnly, onPlay, onTap, onAddSong, onEditItem, notify }: Props) {
+export function SessionColumn({ session, index, songs, members, singers, startSec, selectedId, playingId, readOnly, onPlay, onTap, onAddSong, onEditItem, notify }: Props) {
   const { dispatch } = useStore()
   const { setNodeRef, isOver } = useDroppable({ id: session.id })
   const [arrangeOpen, setArrangeOpen] = useState(false)
@@ -149,6 +150,7 @@ export function SessionColumn({ session, index, songs, members, startSec, select
                     song={song}
                     position={i + 1}
                     members={members}
+                    singers={singers}
                     selected={selectedId === item.id}
                     playing={playingPart}
                     readOnly={readOnly}

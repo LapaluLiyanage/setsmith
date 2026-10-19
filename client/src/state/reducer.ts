@@ -20,6 +20,7 @@ export type Action =
   | { type: 'addMember'; member: Member }
   | { type: 'updateMember'; memberId: string; patch: Partial<Omit<Member, 'id'>> }
   | { type: 'removeMember'; memberId: string }
+  | { type: 'addShowSinger'; showId: string; member: Member }
   | { type: 'undo' }
   | { type: 'replace'; state: BandState }
 
@@ -111,6 +112,19 @@ export function bandReducer(state: BandState, action: Action): BandState {
           ...(i.coSingerIds ? { coSingerIds: i.coSingerIds.filter((id) => id !== action.memberId) } : {}),
         })))
       return cleared
+    }
+    case 'addShowSinger': {
+      // Shows without their own list used to mean "every singer"; pin that down first so the new
+      // singer only appears in the show they were added to.
+      const everyone = state.members.filter((m) => m.isSinger).map((m) => m.id)
+      return {
+        ...state,
+        members: [...state.members, action.member],
+        shows: state.shows.map((s) => ({
+          ...s,
+          singerIds: s.id === action.showId ? [...(s.singerIds ?? everyone), action.member.id] : (s.singerIds ?? everyone),
+        })),
+      }
     }
     case 'undo':
       return state

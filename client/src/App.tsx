@@ -78,7 +78,7 @@ export default function App() {
     dispatch({
       type: 'addShow',
       show: {
-        id: newId('show'), name: 'New show', date: new Date().toISOString().slice(0, 10), venue: '', slotMinutes: 120,
+        id: newId('show'), name: 'New show', date: new Date().toISOString().slice(0, 10), venue: '', slotMinutes: 120, singerIds: [],
         sessions: [{ id: newId('sess'), name: 'Session 1', targetMinutes: 45, items: [] }],
       },
     })

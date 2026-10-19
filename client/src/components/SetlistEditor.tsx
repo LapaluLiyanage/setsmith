@@ -13,6 +13,7 @@ import { newId, useStore } from '../state/store'
 import type { Theme } from '../state/theme'
 import { EnergyMap } from './EnergyMap'
 import { SessionColumn } from './SessionColumn'
+import { showSingers, singerBadge } from '../lib/singers'
 import { SongDrawer } from './SongDrawer'
 
 type DrawerState = { mode: 'add'; sessionId: string } | { mode: 'edit'; itemId: string } | null
@@ -36,6 +37,18 @@ function showDateLine(iso: string): string {
 export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props) {
   const { state, dispatch, canUndo, cloud } = useStore()
   const members = state.members
+  const pickable = showSingers(members, show.singerIds)
+  const bandSingers = members.filter((m) => m.isSinger)
+  const [newSinger, setNewSinger] = useState('')
+  const [singersOpen, setSingersOpen] = useState(false)
+  const otherSingers = bandSingers.filter((m) => !pickable.some((p) => p.id === m.id))
+  const setShowSingers = (ids: string[]) => dispatch({ type: 'updateShow', showId: show.id, patch: { singerIds: ids } })
+  function addNewSinger() {
+    const name = newSinger.trim()
+    if (!name) return
+    dispatch({ type: 'addShowSinger', showId: show.id, member: { id: newId('m'), name, role: 'viewer', isSinger: true } })
+    setNewSinger('')
+  }
 
   // While dragging, a working copy shows cross-session moves live; it's committed as one undo step on drop.
   const [dragSessions, setDragSessions] = useState<Session[] | null>(null)
@@ -244,6 +257,38 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
             <input id="show-venue" value={show.venue} placeholder="Venue" aria-label="Venue" disabled={cloud.readOnly}
               onChange={(e) => dispatch({ type: 'updateShow', showId: show.id, patch: { venue: e.target.value } })} />
           </div>
+          <div className="show-singers" role="group" aria-label="Singers in this show">
+            <button type="button" className="show-singers__toggle" aria-expanded={singersOpen} onClick={() => setSingersOpen((o) => !o)}>
+              <span className="eyebrow">Singers in this show · {pickable.length}</span>
+              <span aria-hidden>{singersOpen ? '▲ Hide' : '▼ Show'}</span>
+            </button>
+            {singersOpen && <div className="show-singers__chips">
+              {pickable.map((m) => (
+                <span key={m.id} className="singer-chip is-on">
+                  <span className="avatar" style={{ background: singerBadge(members, m.id).color }}>{singerBadge(members, m.id).initial}</span>{m.name}
+                  {!cloud.readOnly && (
+                    <button type="button" className="singer-chip__x" aria-label={`Remove ${m.name} from this show`}
+                      onClick={() => setShowSingers(pickable.filter((p) => p.id !== m.id).map((p) => p.id))}>✕</button>
+                  )}
+                </span>
+              ))}
+              {pickable.length === 0 && <span className="muted" style={{ fontSize: 13 }}>No singers yet for this show.</span>}
+            </div>}
+            {singersOpen && !cloud.readOnly && (
+              <div className="show-singers__add">
+                {otherSingers.length > 0 && (
+                  <select aria-label="Add an existing singer" value="" onChange={(e) => e.target.value && setShowSingers([...pickable.map((p) => p.id), e.target.value])}>
+                    <option value="">+ Add existing singer</option>
+                    {otherSingers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                )}
+                <input value={newSinger} placeholder="New singer name" aria-label="New singer name"
+                  onChange={(e) => setNewSinger(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') addNewSinger() }} />
+                <button type="button" className="pill" onClick={addNewSinger} disabled={!newSinger.trim()}>Add</button>
+                {pickable.length > 0 && <button type="button" className="pill" onClick={() => setShowSingers([])}>Clear all</button>}
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="card stats" aria-label="Show numbers">
@@ -281,6 +326,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
               index={i}
               songs={state.songs}
               members={members}
+              singers={pickable}
               startSec={starts[i]}
               selectedId={selectedId}
               playingId={playingId}
@@ -338,7 +384,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
       </div>
 
       {drawerTarget && (
-        <SongDrawer key={JSON.stringify(drawer)} target={drawerTarget} members={members} onClose={() => setDrawer(null)} notify={notify} />
+        <SongDrawer key={JSON.stringify(drawer)} target={drawerTarget} members={members} singers={pickable} onClose={() => setDrawer(null)} notify={notify} />
       )}
     </>
   )

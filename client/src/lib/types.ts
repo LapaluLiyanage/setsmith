@@ -71,6 +71,8 @@ export interface Show {
   date: string
   venue: string
   slotMinutes: number
+  /** Band singers who sing at this show. Absent means every singer in the band. */
+  singerIds?: string[]
   sessions: Session[]
 }
 
