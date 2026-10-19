@@ -3,8 +3,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { reducedMotion } from '../lib/motion'
 import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSheet'
 import { findItem } from '../lib/setlist'
+import { NOTE_NAMES, camelot, transposeKey } from '../lib/music'
 import { beatSeconds, buildStageList } from '../lib/stage'
-import type { Show } from '../lib/types'
+import type { MusicalKey, Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
 import { keepScreenAwake } from '../lib/native'
 import { loadYouTubeApi } from '../lib/ytPlayer'
@@ -83,6 +84,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [keyEdit, setKeyEdit] = useState(false)
   const [sheetDraft, setSheetDraft] = useState<string | null>(null)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [capo, setCapo] = useState(0)
@@ -134,6 +136,24 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     const loc = findItem(show.sessions, cur.itemId)
     return loc ? state.songs[show.sessions[loc.sessionIndex].items[loc.itemIndex].songId] ?? null : null
   })()
+  const rawItem = (() => {
+    if (!cur) return null
+    const loc = findItem(show.sessions, cur.itemId)
+    return loc ? show.sessions[loc.sessionIndex].items[loc.itemIndex] : null
+  })()
+  // The card shows the key the band plays (original + this setlist's transpose), so the picked value
+  // is shifted back to the song's original key and the transpose stays as it is.
+  const playedKeyValue = rawSong?.key && rawItem ? (() => { const k = transposeKey(rawSong.key, rawItem.transpose); return `${k.tonic}-${k.mode}` })() : ''
+  const changePlayedKey = (value: string) => {
+    if (!rawSong || !rawItem) return
+    let key: MusicalKey | null = null
+    if (value) {
+      const [tonic, mode] = value.split('-')
+      key = transposeKey({ tonic: Number(tonic), mode: mode as MusicalKey['mode'] }, -rawItem.transpose)
+    }
+    dispatch({ type: 'updateSong', songId: rawSong.id, patch: { key } })
+    setKeyEdit(false)
+  }
   const startSheetEdit = () => { setFullSheet(false); setScrolling(false); setSheetDraft(rawSong?.chordSheet ?? '') }
   const saveSheet = () => {
     if (rawSong && sheetDraft !== null) dispatch({ type: 'updateSong', songId: rawSong.id, patch: { chordSheet: sheetDraft.trim() ? sheetDraft : null } })
@@ -202,7 +222,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setSheetDraft(null); setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
+  useEffect(() => { setSheetDraft(null); setKeyEdit(false); setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
 
   // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
   // because scrollTop rounds; stops by itself at the bottom.
@@ -468,8 +488,19 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                 </div>
                 <div className="stage__card">
                   <span className="stage__label">KEY</span>
-                  <b className="stage__big">{cur.key ? cur.key.replace(' major', '').replace(' minor', 'm') : '—'}</b>
+                  {keyEdit ? (
+                    <select className="stage__keyselect" aria-label="Key" autoFocus value={playedKeyValue}
+                      onChange={(e) => changePlayedKey(e.target.value)} onBlur={() => setKeyEdit(false)}>
+                      <option value="">Not set</option>
+                      {(['major', 'minor'] as const).flatMap((mode) => NOTE_NAMES.map((name, tonic) => (
+                        <option key={`${tonic}-${mode}`} value={`${tonic}-${mode}`}>{name} {mode} · {camelot({ tonic, mode })}</option>
+                      )))}
+                    </select>
+                  ) : (
+                    <b className="stage__big">{cur.key ? cur.key.replace(' major', '').replace(' minor', 'm') : '—'}</b>
+                  )}
                   <span className="stage__accent">{cur.camelot ? `Camelot ${cur.camelot}` : 'key not set'}</span>
+                  {canControl && !keyEdit && <button type="button" className="stage__tool stage__keyedit" onClick={() => setKeyEdit(true)}>✎ Edit key</button>}
                 </div>
                 <div className="stage__card stage__card--bpm">
                   <span className="stage__label">BPM</span>
