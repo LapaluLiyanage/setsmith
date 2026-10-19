@@ -84,6 +84,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const [index, setIndex] = useState(0)
   const [showChords, setShowChords] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [jumpOpen, setJumpOpen] = useState(false)
   const [keyEdit, setKeyEdit] = useState(false)
   const [sheetDraft, setSheetDraft] = useState<string | null>(null)
   const [chordTranspose, setChordTranspose] = useState(0)
@@ -189,13 +190,14 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cloud.nowPlaying, synced, show.id])
 
-  function go(step: number) {
-    const i = Math.max(0, Math.min(list.length - 1, index + step))
-    if (i === index) return
-    direction.current = step
-    setIndex(i)
-    if (synced && canControl && list[i]) cloud.setNowPlaying(show.id, list[i].itemId)
+  function jumpTo(i: number) {
+    const target = Math.max(0, Math.min(list.length - 1, i))
+    if (target === index) return
+    direction.current = target > index ? 1 : -1
+    setIndex(target)
+    if (synced && canControl && list[target]) cloud.setNowPlaying(show.id, list[target].itemId)
   }
+  function go(step: number) { jumpTo(index + step) }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -206,6 +208,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
         return
       }
       if (editing) return
+      if (jumpOpen) { if (e.key === 'Escape') setJumpOpen(false); return }
       if (e.key === 'Escape') onClose()
       else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(1) }
       else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(-1) }
@@ -403,6 +406,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               {canControl ? '● LIVE' : offLive ? '◐ BROWSING' : '◐ FOLLOWING'}
             </span>
           )}
+          {list.length > 1 && <button type="button" className="stage__tool stage__songsbtn" aria-label="Jump to a song" onClick={() => setJumpOpen(true)}>☰ Songs</button>}
           <span className="stage__clock">{clock}</span>
         </header>
 
@@ -569,6 +573,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               <button type="button" className="stage__tool" aria-label="Previous song" disabled={index === 0} onClick={() => go(-1)}>‹</button>
               <b className="stage__sheettitle">{cur.stageTitle}</b>
               <button type="button" className="stage__tool" aria-label="Next song" disabled={!next} onClick={() => go(1)}>›</button>
+              {list.length > 1 && <button type="button" className="stage__tool" aria-label="Jump to a song" onClick={() => setJumpOpen(true)}>☰</button>}
               {fsSupported && (
                 <button type="button" className="stage__tool" aria-label={fsActive ? 'Exit full screen' : 'Full screen'} onClick={toggleFullscreen}>
                   {fsActive ? '⤢' : '⛶'}
@@ -586,6 +591,30 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           )}
           <div key={cur.itemId} ref={chordsRef} className="stage__chords stage__chords--focus" style={{ fontSize }} onClick={toggleBar}>
             <div className={'stage__cols' + (twoCol ? ' stage__cols--two' : '')}>{chordBody}</div>
+          </div>
+        </div>
+      )}
+      {jumpOpen && (
+        <div className="stage__jump" role="dialog" aria-label="Jump to a song" onClick={() => setJumpOpen(false)}>
+          <div className="stage__jumpbox" onClick={(e) => e.stopPropagation()}>
+            <div className="stage__jumphead">
+              <b>Jump to song</b>
+              <button type="button" className="stage__tool" aria-label="Close" onClick={() => setJumpOpen(false)}>✕</button>
+            </div>
+            <div className="stage__jumplist">
+              {list.map((song, j) => (
+                <div key={song.itemId}>
+                  {(j === 0 || list[j - 1].sessionName !== song.sessionName) && <span className="stage__jumpsess">{song.sessionName.toUpperCase()} SESSION</span>}
+                  <button type="button" ref={j === index ? (el) => el?.scrollIntoView({ block: 'center' }) : undefined}
+                    className={'stage__jumprow' + (j === index ? ' is-now' : '') + (j === liveIndex ? ' is-live' : '')}
+                    onClick={() => { jumpTo(j); setJumpOpen(false) }}>
+                    <span className="stage__jumpnum">{String(song.number).padStart(2, '0')}</span>
+                    <span className="stage__jumptitle">{song.stageTitle}<small>{[song.singer.name, song.key?.replace(' major', '').replace(' minor', 'm')].filter(Boolean).join(' · ')}</small></span>
+                    {j === liveIndex && <em>LIVE</em>}
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
