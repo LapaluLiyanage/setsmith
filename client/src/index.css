@@ -236,6 +236,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 0; 
 
 /* Drawers */
 .scrim { position: fixed; inset: 0; background: rgba(30, 34, 20, .32); z-index: 40; display: flex; justify-content: flex-end; }
+.stage ~ .scrim { z-index: 70; }
 .drawer { width: min(520px, 100%); height: 100%; background: var(--p1); display: flex; flex-direction: column; box-shadow: var(--shadow-pop); border-radius: 28px 0 0 28px; }
 .drawer--wide { width: min(820px, 100%); }
 .drawer__head { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--ln); }
