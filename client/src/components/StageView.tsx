@@ -1,7 +1,7 @@
 import { gsap } from 'gsap'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { reducedMotion } from '../lib/motion'
-import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSheet'
+import { isChordLine, isNoteLine, noteText, transposeChord, transposeChordSheet } from '../lib/chordSheet'
 import { findItem } from '../lib/setlist'
 import { NOTE_NAMES, camelot, transposeKey } from '../lib/music'
 import { showSingers } from '../lib/singers'
@@ -87,6 +87,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const [editing, setEditing] = useState(false)
   const [jumpOpen, setJumpOpen] = useState(false)
   const [keyEdit, setKeyEdit] = useState(false)
+  const draftRef = useRef<HTMLTextAreaElement>(null)
   const [sheetDraft, setSheetDraft] = useState<string | null>(null)
   const [chordTranspose, setChordTranspose] = useState(0)
   const [capo, setCapo] = useState(0)
@@ -168,6 +169,47 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     setChordTranspose(0)
     setCapo(0)
   }
+  // Turn the line under the cursor into a note (or back into a normal line).
+  const toggleNoteLine = () => {
+    const el = draftRef.current
+    if (!el || sheetDraft === null) return
+    const at = el.selectionStart
+    const start = sheetDraft.lastIndexOf('\n', at - 1) + 1
+    const endRaw = sheetDraft.indexOf('\n', at)
+    const end = endRaw === -1 ? sheetDraft.length : endRaw
+    const line = sheetDraft.slice(start, end)
+    const next = isNoteLine(line) ? noteText(line) : `// ${line}`
+    setSheetDraft(sheetDraft.slice(0, start) + next + sheetDraft.slice(end))
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + next.length, start + next.length) })
+  }
+  // Personal notes on single lines of the sheet. Anyone (viewers too) can add them; they live in the
+  // private item_notes row under "<itemId>#sheet" as JSON, so only their author ever sees them.
+  const canLineNote = cloud.configured && !!cloud.band
+  const sheetKey = cur ? `${cur.itemId}#sheet` : ''
+  const rawLines = (rawSong?.chordSheet ?? '').split('\n')
+  const lineNotes = useMemo(() => {
+    let stored: { i: number; t: string; n: string }[] = []
+    try { const parsed = JSON.parse(cloud.myNotes[sheetKey] || '[]'); if (Array.isArray(parsed)) stored = parsed } catch { /* ignore a malformed row */ }
+    // If the sheet was edited since, follow the note to the line with the same text; else park it at the end (idx -1).
+    return stored.map((s) => {
+      const same = (rawLines[s.i] ?? '').trim() === s.t
+      return { idx: same ? s.i : rawLines.findIndex((l) => l.trim() === s.t && s.t !== ''), t: s.t, n: s.n }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloud.myNotes, sheetKey, rawSong?.chordSheet])
+  const [noteMode, setNoteMode] = useState(false)
+  const [noteEditIdx, setNoteEditIdx] = useState<number | null>(null)
+  const [noteEditText, setNoteEditText] = useState('')
+  const openLineNote = (idx: number) => {
+    setNoteEditIdx(idx)
+    setNoteEditText(lineNotes.find((n) => n.idx === idx)?.n ?? '')
+  }
+  const saveLineNote = (idx: number, text: string) => {
+    const keep = lineNotes.filter((n) => n.idx !== idx)
+    const next = text.trim() ? [...keep, { idx, t: (rawLines[idx] ?? '').trim(), n: text.trim() }] : keep
+    cloud.setMyNote(sheetKey, next.length ? JSON.stringify(next.map((n) => ({ i: n.idx, t: n.t, n: n.n }))) : '')
+    setNoteEditIdx(null)
+  }
   const startSheetEdit = () => { setFullSheet(false); setScrolling(false); setSheetDraft(rawSong?.chordSheet ?? '') }
   const saveSheet = () => {
     if (rawSong && sheetDraft !== null) dispatch({ type: 'updateSong', songId: rawSong.id, patch: { chordSheet: sheetDraft.trim() ? sheetDraft : null } })
@@ -238,7 +280,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   }, [])
 
   // Stop any playing video, and reset the local chord transpose, when the song changes.
-  useEffect(() => { setSheetDraft(null); setKeyEdit(false); setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
+  useEffect(() => { setSheetDraft(null); setKeyEdit(false); setNoteMode(false); setNoteEditIdx(null); setShowVideo(0); setChordTranspose(0); setCapo(0); setImgZoom(1); setScrolling(false) }, [index])
 
   // Auto-scroll the chord sheet at `speed` (1 = slow crawl). Fractional pixels are accumulated
   // because scrollTop rounds; stops by itself at the bottom.
@@ -328,31 +370,64 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   // group: a group never splits across columns, and spacing at the top of a column is dropped, so
   // both columns start flush at the top instead of with a blank gap.
   const chordBody = useMemo(() => {
-    const kind = (l: string) => (isChordLine(l) ? 'stage__cl stage__cl--chord'
+    const kind = (l: string) => (isNoteLine(l) ? 'stage__cl stage__cl--note' : isChordLine(l) ? 'stage__cl stage__cl--chord'
       : /^s*[.*]s*$/.test(l) ? 'stage__cl stage__cl--section' : 'stage__cl')
-    const units: { key: number; gap: number; rows: { text: string; cls: string }[] }[] = []
+    const units: { key: number; gap: number; rows: { idx: number; text: string; cls: string }[] }[] = []
     let gap = 0
     for (let i = 0; i < chordLines.length; i++) {
       const line = chordLines[i]
       if (!line.trim()) { gap++; continue }
-      const rows = [{ text: line, cls: kind(line) }]
+      const first = i
+      const rows = [{ idx: i, text: isNoteLine(line) ? noteText(line) : line, cls: kind(line) }]
       const nextLine = chordLines[i + 1]
-      if (isChordLine(line) && nextLine !== undefined && nextLine.trim() && !isChordLine(nextLine) && !/^s*[.*]s*$/.test(nextLine)) {
-        rows.push({ text: nextLine, cls: kind(nextLine) })
+      if (isChordLine(line) && nextLine !== undefined && nextLine.trim() && !isChordLine(nextLine) && !isNoteLine(nextLine) && !/^s*[.*]s*$/.test(nextLine)) {
+        rows.push({ idx: i + 1, text: nextLine, cls: kind(nextLine) })
         i++
       }
-      units.push({ key: i, gap: units.length ? gap : 0, rows })
+      units.push({ key: first, gap: units.length ? gap : 0, rows })
       gap = 0
     }
-    return units.map((u) => (
-      <div key={u.key} className="stage__unit" style={u.gap ? { marginTop: `${u.gap * 1.6}em` } : undefined}>
-        {u.rows.map((r, j) => <div key={j} className={r.cls}>{r.text}</div>)}
+    const myNoteRow = (n: { idx: number; n: string }) => (
+      <div key={`n${n.idx}-${n.n}`} className="stage__cl stage__cl--mynote" role={noteMode ? 'button' : undefined}
+        onClick={noteMode ? (e) => { e.stopPropagation(); openLineNote(n.idx) } : undefined}>✎ {n.n}</div>
+    )
+    const editor = (idx: number) => (
+      <div className="stage__noteedit" onClick={(e) => e.stopPropagation()}>
+        <input value={noteEditText} autoFocus placeholder="Your private note for this line" aria-label="Note for this line"
+          onChange={(e) => setNoteEditText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') saveLineNote(idx, noteEditText); else if (e.key === 'Escape') setNoteEditIdx(null) }} />
+        <button type="button" className="stage__tool stage__tool--go" onClick={() => saveLineNote(idx, noteEditText)}>Save</button>
+        {lineNotes.some((n) => n.idx === idx) && <button type="button" className="stage__tool" onClick={() => saveLineNote(idx, '')}>Delete</button>}
+        <button type="button" className="stage__tool" onClick={() => setNoteEditIdx(null)}>Cancel</button>
       </div>
-    ))
-  }, [chordLines])
+    )
+    const orphans = lineNotes.filter((n) => n.idx < 0)
+    return [
+      ...units.map((u) => (
+        <div key={u.key} className="stage__unit" style={u.gap ? { marginTop: `${u.gap * 1.6}em` } : undefined}>
+          {u.rows.map((r, j) => (
+            <Fragment key={j}>
+              <div className={r.cls + (noteMode ? ' stage__cl--tap' : '')}
+                onClick={noteMode ? (e) => { e.stopPropagation(); openLineNote(r.idx) } : undefined}>{r.text}</div>
+              {lineNotes.filter((n) => n.idx === r.idx).map(myNoteRow)}
+              {noteMode && noteEditIdx === r.idx && editor(r.idx)}
+            </Fragment>
+          ))}
+        </div>
+      )),
+      ...(orphans.length ? [<div key="orphans" className="stage__unit" style={{ marginTop: '1.6em' }}>{orphans.map(myNoteRow)}</div>] : []),
+    ]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chordLines, lineNotes, noteMode, noteEditIdx, noteEditText])
 
   const chordTools = (
     <>
+                    {canLineNote && (
+                      <div className="stage__group">
+                      <button type="button" className="stage__tool stage__tool--mine" aria-pressed={noteMode} title="Tap a line to add a private note under it. Only you can see it."
+                        onClick={() => { setNoteMode((v) => !v); setNoteEditIdx(null) }}>{noteMode ? '✓ Done with my notes' : '✎ My notes'}</button>
+                      </div>
+                    )}
                     <div className="stage__group">
                     <span className="stage__label">TRANSPOSE</span>
                     <div className="stepper">
@@ -479,10 +554,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                 )}
                 {sheetDraft !== null && (
                   <div className="stage__edit">
-                    <textarea className="stage__editarea" value={sheetDraft} spellCheck={false} autoFocus
+                    <textarea ref={draftRef} className="stage__editarea" value={sheetDraft} spellCheck={false} autoFocus
                       aria-label="Chord sheet text" onChange={(e) => setSheetDraft(e.target.value)} />
                     <div className="stage__group">
                       <button type="button" className="stage__tool stage__tool--go" onClick={saveSheet}>✓ Save</button>
+                      <button type="button" className="stage__tool stage__tool--note" title="Make the line under the cursor a note for the players (starts with //)" onClick={toggleNoteLine}>✎ Note</button>
                       <button type="button" className="stage__tool" onClick={() => setSheetDraft(null)}>Cancel</button>
                     </div>
                   </div>

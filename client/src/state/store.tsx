@@ -10,6 +10,7 @@ import { historyReducer, signature, type Action, type HistoryState } from './red
 const BAND_KEY = 'setsmith:band'
 const INVITE_KEY = 'setsmith:invite'
 const PENDING_NAME_KEY = 'setsmith:pendingName'
+const VIEW_ONLY_KEY = 'setsmith:viewOnly'
 const SAVE_DELAY_MS = 700
 
 const emptyState = (): BandState => ({ bandName: 'My band', members: [], songs: {}, shows: [], activeShowId: null })
@@ -44,6 +45,9 @@ export interface Cloud {
   band: BandInfo | null
   role: Role | null
   readOnly: boolean
+  /** A manager or editor has switched themselves to view-only; the band role is unchanged. */
+  viewOnly: boolean
+  setViewOnly: (on: boolean) => void
   access: AccessRow[]
   status: SyncStatus
   notice: string | null
@@ -94,6 +98,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [nowPlaying, setNowPlayingState] = useState<NowPlaying | null>(null)
   const [myNotes, setMyNotes] = useState<Record<string, string>>({})
+  const [viewOnly, setViewOnlyState] = useState(() => lsGet(VIEW_ONLY_KEY) === '1')
   const [pendingInvite, setPendingInvite] = useState(() => lsGet(INVITE_KEY) !== null)
 
   const userId = session?.user.id ?? null
@@ -107,7 +112,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const band = useMemo(() => bands?.find((b) => b.id === bandId) ?? null, [bands, bandId])
   const role = band?.role ?? null
-  const readOnly = role === 'viewer'
+  const readOnly = role === 'viewer' || viewOnly
   const cloudActive = !!supabase && !!session && !!band && dataReady
 
   useEffect(() => {
@@ -312,6 +317,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     rawDispatch(action)
   }, [readOnly])
 
+  const setViewOnly = useCallback((on: boolean) => {
+    lsSet(VIEW_ONLY_KEY, on ? '1' : null)
+    setViewOnlyState(on)
+  }, [])
+
   const signOut = useCallback(async () => {
     if (!supabase) return
     await supabase.auth.signOut()
@@ -386,7 +396,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   const cloud: Cloud = {
-    configured: !!supabase, gate, userId, email: session?.user.email ?? null, isAnonymous, bands: bands ?? [], band, role, readOnly,
+    configured: !!supabase, gate, userId, email: session?.user.email ?? null, isAnonymous, bands: bands ?? [], band, role, readOnly, viewOnly, setViewOnly,
     access, status, notice, pendingInvite, nowPlaying, setNowPlaying, myNotes, setMyNote, dismissNotice: () => setNotice(null), signOut, createBand,
     joinWithCode, joinAnonymously, switchBand: setBandId, refreshAccess,
   }

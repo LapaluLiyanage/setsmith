@@ -469,7 +469,7 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
 
               <label className="field"><span className="eyebrow">Chord sheet (optional)</span>
                 <textarea id="song-chords" className="mono" rows={6} value={chordSheet} onChange={(e) => setChordSheet(e.target.value)}
-                  placeholder={'Chords on their own line above the lyrics, e.g.\nG           D\nAmazing grace how sweet'} />
+                  placeholder={'Chords on their own line above the lyrics, e.g.\nG           D\nAmazing grace how sweet\n\nStart a line with // to add a note for the players.'} />
               </label>
 
               <div className="field">
