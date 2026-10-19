@@ -28,3 +28,9 @@ export function singerBadge(members: Member[], singerId: string | null): SingerB
     color: SINGER_COLORS[Math.max(0, index) % SINGER_COLORS.length],
   }
 }
+
+/** The singers to offer for a show: the band's singers, narrowed to the show's own list when it has one. */
+export function showSingers(members: Member[], singerIds?: string[]): Member[] {
+  const singers = members.filter((m) => m.isSinger)
+  return singerIds ? singers.filter((m) => singerIds.includes(m.id)) : singers
+}

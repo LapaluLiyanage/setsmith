@@ -4,6 +4,7 @@ import { reducedMotion } from '../lib/motion'
 import { isChordLine, transposeChord, transposeChordSheet } from '../lib/chordSheet'
 import { findItem } from '../lib/setlist'
 import { NOTE_NAMES, camelot, transposeKey } from '../lib/music'
+import { showSingers } from '../lib/singers'
 import { beatSeconds, buildStageList } from '../lib/stage'
 import type { MusicalKey, Show } from '../lib/types'
 import { watchUrl } from '../lib/youtube'
@@ -620,7 +621,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
       )}
     </div>
     {editTarget && (
-      <SongDrawer key={editTarget.item.id} target={editTarget} members={state.members} onClose={() => setEditing(false)} notify={() => {}} />
+      <SongDrawer key={editTarget.item.id} target={editTarget} members={state.members} singers={showSingers(state.members, show.singerIds)} onClose={() => setEditing(false)} notify={() => {}} />
     )}
     </>
   )

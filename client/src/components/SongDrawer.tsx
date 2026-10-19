@@ -18,6 +18,7 @@ type Target =
 interface Props {
   target: Target
   members: Member[]
+  singers?: Member[]
   onClose: () => void
   notify: (message: string) => void
 }
@@ -40,10 +41,10 @@ const SOURCE_LABEL: Record<BpmSource, string> = {
   lookup: 'FROM GETSONGBPM', analysis: 'FROM AUDIO', tap: 'TAPPED', manual: 'TYPED IN',
 }
 
-export function SongDrawer({ target, members, onClose, notify }: Props) {
+export function SongDrawer({ target, members, singers: pickable, onClose, notify }: Props) {
   const { dispatch, cloud } = useStore()
   const existing = target.mode === 'edit' ? target : null
-  const singers = members.filter((m) => m.isSinger)
+  const singers = pickable ?? members.filter((m) => m.isSinger)
 
   const [phase, setPhase] = useState<'search' | 'details'>(existing ? 'details' : 'search')
   const [query, setQuery] = useState('')
