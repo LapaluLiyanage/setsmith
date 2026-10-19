@@ -1,5 +1,5 @@
 import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer'
-import { isChordLine } from '../lib/chordSheet'
+import { isChordLine, isNoteLine, noteText } from '../lib/chordSheet'
 import type { StageSong } from '../lib/stage'
 import { sf } from './SetlistPdf'
 
@@ -18,6 +18,7 @@ const s = StyleSheet.create({
   chord: { fontFamily: 'Courier-Bold', color: ACCENT },
   lyric: { fontFamily: 'Courier' },
   section: { fontFamily: 'Courier', color: MUTED },
+  note: { fontFamily: 'Courier-Oblique', color: '#1d6fb8' },
   image: { width: '100%', objectFit: 'contain' },
   footer: { position: 'absolute', bottom: 20, left: 32, right: 32, flexDirection: 'row', justifyContent: 'space-between', fontSize: 7, color: MUTED },
 })
@@ -42,8 +43,8 @@ function Sheet({ song, bandName }: { song: StageSong; bandName: string }) {
       <Text style={[s.meta, sf(meta)]}>{ascii(meta)}</Text>
       {song.chordSheet ? lines.map((line, i) => (
         <Text key={i} wrap={false}
-          style={[isChordLine(line) ? s.chord : /^\s*\[.*\]\s*$/.test(line) ? s.section : s.lyric, { fontSize: size, lineHeight: 1.45 }, sf(line)]}>
-          {line || ' '}
+          style={[isNoteLine(line) ? s.note : isChordLine(line) ? s.chord : /^\s*\[.*\]\s*$/.test(line) ? s.section : s.lyric, { fontSize: size, lineHeight: 1.45 }, sf(line)]}>
+          {isNoteLine(line) ? noteText(line) : line || ' '}
         </Text>
       )) : song.chordSheetImage ? <Image src={song.chordSheetImage} style={s.image} /> : null}
       <View style={s.footer} fixed>

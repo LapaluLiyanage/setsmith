@@ -56,9 +56,15 @@ export function transposeChord(token: string, semitones: number): string {
   return lower ? out[0].toLowerCase() + out.slice(1) : out
 }
 
+/** A line starting with "//" is a note to the players (e.g. "// hold the last chord"), shown in its own
+ * colour: it is never read as chords or lyrics, so it is left alone when transposing. */
+export const isNoteLine = (line: string) => /^\s*\/\//.test(line)
+export const noteText = (line: string) => line.replace(/^\s*\/\/\s?/, '')
+
 /** True when the line is a ChordPro-style chord line (allowing a leading section label like
  * "Intro:", and bar/repeat marks like "|" or "x4"), rather than lyrics. */
 export function isChordLine(line: string): boolean {
+  if (isNoteLine(line)) return false
   const tokens = line.trim().split(/\s+/).filter(Boolean)
   if (tokens.length === 0) return false
   const body = LABEL_RE.test(tokens[0]) ? tokens.slice(1) : tokens

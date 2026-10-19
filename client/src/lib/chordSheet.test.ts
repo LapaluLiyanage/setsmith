@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isChordLine, transposeChord, transposeChordSheet } from './chordSheet'
+import { isChordLine, isNoteLine, noteText, transposeChord, transposeChordSheet } from './chordSheet'
 
 describe('transposeChord', () => {
   it('shifts a plain major chord', () => {
@@ -144,5 +144,19 @@ describe('bare lowercase chord letters', () => {
   it('does not treat a lone letter as a chord with just one real chord', () => {
     expect(isChordLine('A a')).toBe(false)
     expect(isChordLine('Am e')).toBe(false)
+  })
+})
+
+describe('note lines', () => {
+  it('treats lines starting with // as notes, not chords', () => {
+    expect(isNoteLine('// hold the last chord')).toBe(true)
+    expect(isNoteLine('  // G D')).toBe(true)
+    expect(isChordLine('// G D')).toBe(false)
+    expect(isNoteLine('G D')).toBe(false)
+    expect(noteText('// hold the last chord')).toBe('hold the last chord')
+  })
+
+  it('leaves notes untouched when transposing', () => {
+    expect(transposeChordSheet('G  D\n// play G softly\nla la', 2)).toBe('A  E\n// play G softly\nla la')
   })
 })

@@ -117,6 +117,11 @@ export default function App() {
             <button className="nav__item nav__item--keep" onClick={toggleTheme} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
+            {cloud.role && cloud.role !== 'viewer' && (
+              <button className="nav__item nav__item--keep" aria-pressed={cloud.viewOnly} onClick={() => cloud.setViewOnly(!cloud.viewOnly)}>
+                {cloud.viewOnly ? 'Edit mode' : 'View only'}
+              </button>
+            )}
             {cloud.configured && <button className="nav__item nav__item--keep" onClick={cloud.signOut}>Log out</button>}
             {canInstall &&<button className="nav__item nav__item--keep" onClick={install}>⭳ Install app</button>}
           </nav>
@@ -127,7 +132,13 @@ export default function App() {
           <button className="pill pill--dark" onClick={addShow}>+ New show</button>
         </header>
 
-        {cloud.readOnly && <p className="viewer-banner" role="status">You have view-only access to this band. Ask the manager for editor access to make changes.</p>}
+        {cloud.readOnly && (
+          <p className="viewer-banner" role="status">
+            {cloud.role === 'viewer'
+              ? 'You have view-only access to this band. Ask the manager for editor access to make changes.'
+              : <>View-only mode is on, so nothing can be changed by accident. <button type="button" className="viewer-banner__btn" onClick={() => cloud.setViewOnly(false)}>Switch to edit mode</button></>}
+          </p>
+        )}
 
         {view === 'library' ? (
           <LibraryView show={show} />

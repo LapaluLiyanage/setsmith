@@ -682,3 +682,16 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 
 .show-singers__toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; background: transparent; color: var(--mu); font: 500 11px var(--mono); text-align: left; }
 .show-singers__toggle:hover { color: var(--tx); }
+
+.stage__cl--note { color: #7cc8ff; font-style: italic; font-weight: 600; padding: 2px 8px; border-left: 3px solid #7cc8ff; background: rgba(124, 200, 255, .08); border-radius: 4px; margin: 4px 0; white-space: pre-wrap; }
+.stage__tool--note { border-color: #7cc8ff; color: #7cc8ff; }
+
+.viewer-banner__btn { margin-left: 8px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+.stage__cl--mynote { color: #ffb36b; font-style: italic; font-weight: 600; padding: 2px 8px; border-left: 3px solid #ffb36b; background: rgba(255, 179, 107, .09); border-radius: 4px; margin: 4px 0; white-space: pre-wrap; }
+.stage__cl--tap { cursor: pointer; border-radius: 4px; }
+.stage__cl--tap:hover { background: rgba(255, 179, 107, .12); }
+.stage__tool--mine { border-color: #ffb36b; color: #ffb36b; }
+.stage__tool--mine[aria-pressed="true"] { background: rgba(255, 179, 107, .16); }
+.stage__noteedit { display: flex; gap: 6px; align-items: center; margin: 4px 0 8px; font-size: 14px; }
+.stage__noteedit input { flex: 1; min-width: 0; height: 36px; border-radius: 18px; border: 1px solid #ffb36b; background: #161715; color: #f4f4ef; padding: 0 14px; user-select: text; }
