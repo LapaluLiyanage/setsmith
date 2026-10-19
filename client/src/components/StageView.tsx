@@ -397,6 +397,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     {showChords ? 'Hide chords' : 'Chords'}
                   </button>
                 )}
+                {canControl && (
+                  <button type="button" className="stage__chordtoggle" onClick={() => setEditing(true)}>
+                    {cur.chordSheet || cur.chordSheetImage ? '✎ Edit chords' : '+ Add chords'}
+                  </button>
+                )}
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
