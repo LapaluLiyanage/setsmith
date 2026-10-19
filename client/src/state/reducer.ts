@@ -1,5 +1,5 @@
 import { arrangeByBpm, moveItem, swapItems, type ArrangeMode } from '../lib/setlist'
-import type { BandState, Member, Session, SetlistItem, Show, Song } from '../lib/types'
+import type { BandState, Member, Session, SetlistItem, Show, ShowPhoto, Song } from '../lib/types'
 
 export type Action =
   | { type: 'selectShow'; showId: string }
@@ -20,6 +20,8 @@ export type Action =
   | { type: 'addMember'; member: Member }
   | { type: 'updateMember'; memberId: string; patch: Partial<Omit<Member, 'id'>> }
   | { type: 'removeMember'; memberId: string }
+  | { type: 'addShowPhotos'; showId: string; photos: ShowPhoto[] }
+  | { type: 'removeShowPhoto'; showId: string; photoId: string }
   | { type: 'addShowSinger'; showId: string; member: Member }
   | { type: 'undo' }
   | { type: 'replace'; state: BandState }
@@ -113,6 +115,10 @@ export function bandReducer(state: BandState, action: Action): BandState {
         })))
       return cleared
     }
+    case 'addShowPhotos':
+      return mapShows(state, (s) => (s.id === action.showId ? { ...s, photos: [...(s.photos ?? []), ...action.photos] } : s))
+    case 'removeShowPhoto':
+      return mapShows(state, (s) => (s.id === action.showId ? { ...s, photos: (s.photos ?? []).filter((p) => p.id !== action.photoId) } : s))
     case 'addShowSinger': {
       // Shows without their own list used to mean "every singer"; pin that down first so the new
       // singer only appears in the show they were added to.

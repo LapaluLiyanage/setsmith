@@ -65,6 +65,13 @@ export interface Session {
   items: SetlistItem[]
 }
 
+/** A photo in a show's album; the file lives in the private show-photos bucket at `path`. */
+export interface ShowPhoto {
+  id: string
+  path: string
+  addedAt: string
+}
+
 export interface Show {
   id: string
   name: string
@@ -73,6 +80,8 @@ export interface Show {
   slotMinutes: number
   /** Band singers who sing at this show. Absent means every singer in the band. */
   singerIds?: string[]
+  /** The show's photo album, shown once the show date has passed. */
+  photos?: ShowPhoto[]
   sessions: Session[]
 }
 
