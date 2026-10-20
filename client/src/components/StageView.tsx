@@ -16,6 +16,11 @@ import { SongPlayer } from './SongPlayer'
 
 const SWIPE_PX = 50
 
+// Drawn instead of typed: the corner-arrow characters are missing from older Android fonts.
+const iconProps = { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
+const ExpandIcon = () => <svg {...iconProps}><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" /></svg>
+const CollapseIcon = () => <svg {...iconProps}><path d="M6 2v4H2M10 2v4h4M6 14v-4H2M10 14v-4h4" /></svg>
+
 function useClock() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -439,7 +444,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     {chordTranspose !== 0 && <button type="button" className="stage__tool" onClick={() => setChordTranspose(0)}>Reset</button>}
                     {canControl && shift !== 0 && rawSong?.chordSheet && (
                       <button type="button" className="stage__tool stage__tool--go" title="Keep this transposed sheet as the sheet that's played"
-                        onClick={savePlayingSheet}>💾 Save as playing sheet</button>
+                        onClick={savePlayingSheet}>✓ Save as playing sheet</button>
                     )}
                     </div>
                     <div className="stage__group">
@@ -458,11 +463,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     <button type="button" className="stage__tool" aria-pressed={twoCol} onClick={toggleTwoCol}>
                       {twoCol ? '1 column' : '2 columns'}
                     </button>
-                    {!focusSheet && <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(true)}>⤢ Full screen</button>}
+                    {!focusSheet && <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(true)}><ExpandIcon /> Full screen</button>}
                     </div>
                     <div className="stage__group">
                     <button type="button" className="stage__tool stage__tool--go" aria-pressed={scrolling}
-                      onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶ Auto-scroll'}</button>
+                      onClick={() => setScrolling((v) => !v)}>{scrolling ? '■ Stop' : '▶︎ Auto-scroll'}</button>
                     <div className="stepper">
                       <button type="button" aria-label="Slower scroll" onClick={() => setSpeed((s) => Math.max(1, s - 1))}>−</button>
                       <span>{speed}</span>
@@ -486,7 +491,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
           <button className="stage__close" onClick={onClose} aria-label="Close stage view">×</button>
           {fsSupported && (
             <button className="stage__close" onClick={toggleFullscreen} aria-label={fsActive ? 'Exit full screen' : 'Full screen'}>
-              {fsActive ? '⤢' : '⛶'}
+              {fsActive ? <CollapseIcon /> : <ExpandIcon />}
             </button>
           )}
           <div className="stage__where">
@@ -516,7 +521,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                   <button type="button" className="stage__playbtn" aria-pressed={showVideo !== 0}
                     aria-label={showVideo !== 0 ? 'Stop playback' : 'Play'}
                     onClick={() => setShowVideo((v) => (v !== 0 ? 0 : 1))}>
-                    {showVideo !== 0 ? '■' : '▶'}
+                    {showVideo !== 0 ? '■' : '▶︎'}
                   </button>
                 )}
                 {(cur.chordSheet || cur.chordSheetImage) && (
@@ -669,16 +674,16 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               {list.length > 1 && <button type="button" className="stage__tool" aria-label="Jump to a song" onClick={() => setJumpOpen(true)}>☰</button>}
               {fsSupported && (
                 <button type="button" className="stage__tool" aria-label={fsActive ? 'Exit full screen' : 'Full screen'} onClick={toggleFullscreen}>
-                  {fsActive ? '⤢' : '⛶'}
+                  {fsActive ? <CollapseIcon /> : <ExpandIcon />}
                 </button>
               )}
-              <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(false)}>⤡ Exit full screen</button>
+              <button type="button" className="stage__tool stage__tool--go" onClick={() => setFullSheet(false)}><CollapseIcon /> Exit full screen</button>
             </div>
             <div className="stage__chordbar">{chordTools}</div>
           </div>
           {!barShown && (
             <div className="stage__sheetpeek">
-              <button type="button" aria-label="Exit full screen" onClick={() => setFullSheet(false)}>⤡</button>
+              <button type="button" aria-label="Exit full screen" onClick={() => setFullSheet(false)}><CollapseIcon /></button>
               <button type="button" aria-label="Show controls" onClick={wakeBar}>☰</button>
             </div>
           )}

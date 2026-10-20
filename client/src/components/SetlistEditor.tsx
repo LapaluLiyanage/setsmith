@@ -197,7 +197,7 @@ export function SetlistEditor({ show, theme, onShare, onExport, onStage }: Props
     if (a && b) {
       const ta = state.songs[show.sessions[a.sessionIndex].items[a.itemIndex].songId]?.title
       const tb = state.songs[show.sessions[b.sessionIndex].items[b.itemIndex].songId]?.title
-      notify(`Swapped “${ta}” ↔ “${tb}”`)
+      notify(`Swapped “${ta}” ↔︎ “${tb}”`)
     }
   }
 
