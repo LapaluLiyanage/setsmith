@@ -300,7 +300,7 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
                       <button type="button" className="icon-btn" aria-pressed={previewId === r.youtubeId}
                         aria-label={previewId === r.youtubeId ? `Stop previewing ${r.title}` : `Preview ${r.title}`}
                         onClick={() => setPreviewId((p) => (p === r.youtubeId ? null : r.youtubeId))}>
-                        {previewId === r.youtubeId ? '■' : '▶'}
+                        {previewId === r.youtubeId ? '■' : '▶︎'}
                       </button>
                       {previewId === r.youtubeId && (
                         <div className="result__preview"><SongPlayer youtubeId={r.youtubeId} title={r.title} artist={r.channel} /></div>

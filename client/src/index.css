@@ -303,9 +303,9 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage { position: fixed; inset: 0; z-index: 60; background: #050505; color: #f4f4ef; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; user-select: none;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); color-scheme: dark; }
 .stage__col { max-width: 520px; min-height: 100%; margin: 0 auto; display: flex; flex-direction: column; padding: 12px 16px 24px; width: 100%; }
-.stage__head { display: flex; align-items: center; gap: 10px; padding: 8px 4px 0; }
+.stage__head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 4px 0; }
 .stage__close { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #2a2b28; background: transparent; color: inherit; font-size: 18px; flex: none; }
-.stage__where { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.stage__where { flex: 1 1 140px; display: flex; flex-direction: column; min-width: 0; }
 .stage__where span, .stage__label { font: 500 11px var(--mono); color: #8a8d86; letter-spacing: .04em; }
 .stage__where b { font-size: 14px; font-weight: 600; }
 .stage__clock { height: 32px; padding: 0 12px; border-radius: 16px; background: #1a1b19; font: 500 13px var(--mono); display: flex; align-items: center; }
@@ -713,3 +713,14 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .album__nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 1px solid #2a2b28; background: rgba(22, 23, 21, .8); color: #f4f4ef; font-size: 24px; }
 .album__nav--prev { left: 12px; }
 .album__nav--next { right: 12px; }
+
+/* Narrow phones: the song position gets its own full row instead of being squeezed between the buttons. */
+@media (max-width: 560px) {
+  .stage__head { gap: 8px; }
+  .stage__where { order: 9; flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .stage__where b { font-size: 15px; }
+  .stage__songsbtn { margin-left: auto; }
+}
+.stage__tool svg, .stage__sheethead svg { vertical-align: -2px; }
+.stage__tool svg:not(:only-child) { margin-right: 6px; }
+button, .icon-btn, .stage__tool { font-variant-emoji: text; }

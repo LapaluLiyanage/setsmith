@@ -123,7 +123,7 @@ export default function App() {
               </button>
             )}
             {cloud.configured && <button className="nav__item nav__item--keep" onClick={cloud.signOut}>Log out</button>}
-            {canInstall &&<button className="nav__item nav__item--keep" onClick={install}>⭳ Install app</button>}
+            {canInstall &&<button className="nav__item nav__item--keep" onClick={install}>↓ Install app</button>}
           </nav>
           <select id="show-picker" className="show-select" aria-label="Choose show" value={show?.id ?? ''}
             onChange={(e) => dispatch({ type: 'selectShow', showId: e.target.value })}>

@@ -95,7 +95,7 @@ export function SongPlayer({ youtubeId, title, artist }: Props) {
       <div ref={hostRef} className="mp3__hidden" aria-hidden />
       <img className="mp3__art" src={thumbUrl(youtubeId)} alt="" />
       <button type="button" className="mp3__play" onClick={toggle} disabled={!ready} aria-label={playing ? 'Pause' : 'Play'}>
-        {playing ? '❚❚' : '▶'}
+        {playing ? '❚❚' : '▶︎'}
       </button>
       <div className="mp3__body">
         <div className="mp3__head"><b className="mp3__title">{title}</b><span className="mp3__artist">{artist}</span></div>
