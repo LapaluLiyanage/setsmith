@@ -724,3 +724,5 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 .stage__tool svg, .stage__sheethead svg { vertical-align: -2px; }
 .stage__tool svg:not(:only-child) { margin-right: 6px; }
 button, .icon-btn, .stage__tool { font-variant-emoji: text; }
+
+.stage__addchords { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
