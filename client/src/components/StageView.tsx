@@ -218,6 +218,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
   const startSheetEdit = () => { setFullSheet(false); setScrolling(false); setSheetDraft(rawSong?.chordSheet ?? '') }
   const saveSheet = () => {
     if (rawSong && sheetDraft !== null) dispatch({ type: 'updateSong', songId: rawSong.id, patch: { chordSheet: sheetDraft.trim() ? sheetDraft : null } })
+    if (sheetDraft?.trim()) setShowChords(true)
     setSheetDraft(null)
   }
   const editTarget = (() => {
@@ -425,6 +426,19 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chordLines, lineNotes, noteMode, noteEditIdx, noteEditText])
 
+  const sheetEditor = sheetDraft !== null && (
+    <div className="stage__edit">
+      <textarea ref={draftRef} className="stage__editarea" value={sheetDraft} spellCheck={false} autoFocus
+        aria-label="Chord sheet text" placeholder={'Paste or type the chords here. Put chords on their own line above the lyrics. Start a line with // for a note to the players.'}
+        onChange={(e) => setSheetDraft(e.target.value)} />
+      <div className="stage__group">
+        <button type="button" className="stage__tool stage__tool--go" onClick={saveSheet}>✓ Save</button>
+        <button type="button" className="stage__tool stage__tool--note" title="Make the line under the cursor a note for the players (starts with //)" onClick={toggleNoteLine}>✎ Note</button>
+        <button type="button" className="stage__tool" onClick={() => setSheetDraft(null)}>Cancel</button>
+      </div>
+    </div>
+  )
+
   const chordTools = (
     <>
                     {canLineNote && (
@@ -533,6 +547,12 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
+            {canControl && !cur.chordSheet && !cur.chordSheetImage && (sheetDraft !== null ? sheetEditor : (
+              <div className="stage__addchords">
+                <button type="button" className="stage__tool stage__tool--go" onClick={startSheetEdit}>+ Add chords</button>
+                <button type="button" className="stage__tool" onClick={() => setEditing(true)}>Add chord photo</button>
+              </div>
+            ))}
             {showChords && !focusSheet && (cur.chordSheet || cur.chordSheetImage) ? (
               <>
                 {cur.chordSheet && (
@@ -557,17 +577,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       style={imgZoom > 1 ? { width: `${imgZoom * 100}%`, maxWidth: 'none' } : undefined} />
                   </div>
                 )}
-                {sheetDraft !== null && (
-                  <div className="stage__edit">
-                    <textarea ref={draftRef} className="stage__editarea" value={sheetDraft} spellCheck={false} autoFocus
-                      aria-label="Chord sheet text" onChange={(e) => setSheetDraft(e.target.value)} />
-                    <div className="stage__group">
-                      <button type="button" className="stage__tool stage__tool--go" onClick={saveSheet}>✓ Save</button>
-                      <button type="button" className="stage__tool stage__tool--note" title="Make the line under the cursor a note for the players (starts with //)" onClick={toggleNoteLine}>✎ Note</button>
-                      <button type="button" className="stage__tool" onClick={() => setSheetDraft(null)}>Cancel</button>
-                    </div>
-                  </div>
-                )}
+                {sheetEditor}
                 {cur.chordSheet && sheetDraft === null && (
                   <div className={`stage__chords${twoCol ? ' stage__chords--two' : ''}${fontSize !== 16 ? ' stage__chords--manual' : ''}`}
                     style={{ '--maxch': Math.max(1, ...chordLines.map((l) => l.length)), fontSize } as CSSProperties}>
