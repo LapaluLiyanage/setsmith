@@ -4,3 +4,7 @@ dist/
 *.log
 .DS_Store
 .vitest/
+
+# Claude Code local files
+.claude/
+CLAUDE.local.md
