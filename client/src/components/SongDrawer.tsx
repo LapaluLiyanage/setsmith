@@ -1,7 +1,7 @@
 import { gsap } from 'gsap'
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { fetchVideo, lookupBpm, searchYouTube, type BpmMatch, type VideoInfo } from '../lib/api'
-import { MAX_CHORD_IMAGE_BYTES, deleteChordSheetImage, uploadChordSheetImage } from '../lib/chordSheetImage'
+import { MAX_CHORD_IMAGE_BYTES, MAX_CHORD_PDF_BYTES, deleteChordSheetImage, uploadChordSheetImage, uploadChordSheetPdf } from '../lib/chordSheetImage'
 import { reducedMotion, useDrawerIn } from '../lib/motion'
 import { NOTE_NAMES, camelot, parseKey, suggestTranspose } from '../lib/music'
 import { singerBadge } from '../lib/singers'
@@ -72,6 +72,9 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
   const [chordImagePreview, setChordImagePreview] = useState<string | null>(existing?.song.chordSheetImage ?? null)
   const [chordImageFile, setChordImageFile] = useState<File | null>(null)
   const [chordImageRemoved, setChordImageRemoved] = useState(false)
+  const [chordPdfUrl, setChordPdfUrl] = useState<string | null>(existing?.song.chordSheetPdf ?? null)
+  const [chordPdfFile, setChordPdfFile] = useState<File | null>(null)
+  const [chordPdfRemoved, setChordPdfRemoved] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [matches, setMatches] = useState<BpmMatch[]>([])
@@ -191,6 +194,23 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
     setStatus(null)
   }
 
+  function onPickChordPdf(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    e.target.value = ''
+    if (!file) return
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return setStatus('That file is not a PDF.')
+    if (file.size > MAX_CHORD_PDF_BYTES) return setStatus('That PDF is too large — 15MB max.')
+    setChordPdfFile(file)
+    setChordPdfRemoved(false)
+    setStatus(null)
+  }
+
+  function removeChordPdf() {
+    setChordPdfFile(null)
+    setChordPdfUrl(null)
+    setChordPdfRemoved(true)
+  }
+
   function removeChordImage() {
     setChordImageFile(null)
     setChordImagePreview(null)
@@ -217,6 +237,22 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
       chordSheetImage = null
       if (existing?.song.chordSheetImage) deleteChordSheetImage(existing.song.chordSheetImage)
     }
+    let chordSheetPdf = existing?.song.chordSheetPdf ?? null
+    if (chordPdfFile) {
+      if (!cloud.band) return setStatus("Can't upload a PDF without a band.")
+      setUploadingImage(true)
+      try {
+        chordSheetPdf = await uploadChordSheetPdf(cloud.band.id, songId, chordPdfFile)
+      } catch (err) {
+        setUploadingImage(false)
+        return setStatus(`Couldn't upload the PDF: ${(err as Error).message}`)
+      }
+      setUploadingImage(false)
+      if (existing?.song.chordSheetPdf) deleteChordSheetImage(existing.song.chordSheetPdf)
+    } else if (chordPdfRemoved) {
+      chordSheetPdf = null
+      if (existing?.song.chordSheetPdf) deleteChordSheetImage(existing.song.chordSheetPdf)
+    }
     const songFields = {
       title: title.trim(),
       shortTitle: shortTitle.trim() ? shortTitle.trim() : null,
@@ -229,6 +265,7 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
       bpmSource: bpm ? (bpmSource ?? 'manual') : null,
       chordSheet: chordSheet.trim() ? chordSheet : null,
       chordSheetImage,
+      chordSheetPdf,
     }
     const itemFields = {
       singerId, singerId2: youtubeId2 ? singerId2 : null,
@@ -490,6 +527,24 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
                   </label>
                 )}
               </div>
+
+              <div className="field">
+                <span className="eyebrow">Chord sheet PDF (optional)</span>
+                {chordPdfFile || chordPdfUrl ? (
+                  <div className="picked">
+                    <div>
+                      <b>{chordPdfFile ? chordPdfFile.name : 'PDF attached'}</b>
+                      <span className="muted">{chordPdfFile ? 'Uploads when you save.' : 'Shown page by page in Stage view.'}</span>
+                    </div>
+                    <button type="button" className="pill" onClick={removeChordPdf}>Remove</button>
+                  </div>
+                ) : (
+                  <label className="pill pill--ghost" style={{ alignSelf: 'flex-start', cursor: 'pointer' }}>
+                    Upload a chord sheet PDF
+                    <input type="file" accept="application/pdf,.pdf" style={{ display: 'none' }} onChange={onPickChordPdf} />
+                  </label>
+                )}
+              </div>
             </>
           )}
         </form>
@@ -512,7 +567,7 @@ export function SongDrawer({ target, members, singers: pickable, onClose, notify
             ))}
             <span className="grow" />
             <button type="submit" form="song-form" className="pill pill--accent pill--lg" disabled={uploadingImage}>
-              {uploadingImage ? 'Uploading photo…' : target.mode === 'add' ? `Add to ${target.sessionName}` : 'Save changes'}
+              {uploadingImage ? 'Uploading…' : target.mode === 'add' ? `Add to ${target.sessionName}` : 'Save changes'}
             </button>
           </footer>
         )}

@@ -11,6 +11,7 @@ import { watchUrl } from '../lib/youtube'
 import { keepScreenAwake } from '../lib/native'
 import { loadYouTubeApi } from '../lib/ytPlayer'
 import { useStore } from '../state/store'
+import { PdfSheet } from './PdfSheet'
 import { SongDrawer } from './SongDrawer'
 import { SongPlayer } from './SongPlayer'
 
@@ -538,7 +539,7 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                     {showVideo !== 0 ? '■' : '▶︎'}
                   </button>
                 )}
-                {(cur.chordSheet || cur.chordSheetImage) && (
+                {(cur.chordSheet || cur.chordSheetImage || cur.chordSheetPdf) && (
                   <button type="button" className="stage__chordtoggle"
                     onClick={() => setShowChords((v) => !v)} aria-pressed={showChords}>
                     {showChords ? 'Hide chords' : 'Chords'}
@@ -547,20 +548,20 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
               </div>
             </div>
             <span className="stage__artist">{[cur.artist, cur.transposeNote].filter(Boolean).join(' · ')}</span>
-            {canControl && !cur.chordSheet && !cur.chordSheetImage && (sheetDraft !== null ? sheetEditor : (
+            {canControl && !cur.chordSheet && !cur.chordSheetImage && !cur.chordSheetPdf && (sheetDraft !== null ? sheetEditor : (
               <div className="stage__addchords">
                 <button type="button" className="stage__tool stage__tool--go" onClick={startSheetEdit}>+ Add chords</button>
-                <button type="button" className="stage__tool" onClick={() => setEditing(true)}>Add chord photo</button>
+                <button type="button" className="stage__tool" onClick={() => setEditing(true)}>Add photo or PDF</button>
               </div>
             ))}
-            {showChords && !focusSheet && (cur.chordSheet || cur.chordSheetImage) ? (
+            {showChords && !focusSheet && (cur.chordSheet || cur.chordSheetImage || cur.chordSheetPdf) ? (
               <>
                 {cur.chordSheet && (
                   <div className="stage__chordbar">
                     {chordTools}
                   </div>
                 )}
-                {cur.chordSheetImage && (
+                {(cur.chordSheetImage || cur.chordSheetPdf) && (
                   <div className="stage__chordbar">
                     <span className="stage__label">ZOOM</span>
                     <div className="stepper">
@@ -569,6 +570,11 @@ export function StageView({ show, onClose }: { show: Show; onClose: () => void }
                       <button type="button" aria-label="Zoom in" onClick={() => setImgZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))}>+</button>
                     </div>
                     {imgZoom !== 1 && <button type="button" className="stage__yt" onClick={() => setImgZoom(1)}>Reset</button>}
+                  </div>
+                )}
+                {cur.chordSheetPdf && (
+                  <div className="stage__chordimgwrap">
+                    <PdfSheet key={cur.chordSheetPdf} url={cur.chordSheetPdf} zoom={imgZoom} />
                   </div>
                 )}
                 {cur.chordSheetImage && (

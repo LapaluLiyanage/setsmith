@@ -28,6 +28,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@supabase/supabase-js": "^2.117.2",
     "gsap": "^3.15.0",
+    "pdfjs-dist": "^6.4.299",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

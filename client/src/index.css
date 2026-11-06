@@ -726,3 +726,7 @@ details textarea { width: 100%; margin-top: 8px; font: 12px var(--mono); }
 button, .icon-btn, .stage__tool { font-variant-emoji: text; }
 
 .stage__addchords { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.pdfsheet__pages { display: flex; flex-direction: column; gap: 10px; }
+.pdfsheet__page { width: 100%; height: auto; display: block; background: #fff; border-radius: 8px; }
+.pdfsheet a { color: #e2f24a; }

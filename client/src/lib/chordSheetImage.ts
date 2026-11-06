@@ -24,3 +24,14 @@ export function deleteChordSheetImage(url: string) {
   const path = pathFromPublicUrl(url)
   if (supabase && path) supabase.storage.from(BUCKET).remove([path]).catch(() => {})
 }
+
+export const MAX_CHORD_PDF_BYTES = 15 * 1024 * 1024
+
+/** Uploads a PDF chord sheet under the band's folder and returns its public URL. */
+export async function uploadChordSheetPdf(bandId: string, songId: string, file: File): Promise<string> {
+  if (!supabase) throw new Error('Not connected to Supabase')
+  const path = `${bandId}/${songId}-${Date.now()}.pdf`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: 'application/pdf' })
+  if (error) throw error
+  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl
+}

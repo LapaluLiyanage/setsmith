@@ -36,6 +36,7 @@ export interface StageSong {
   chordSheet: string | null
   /** A photo of a chord sheet; can't be transposed, shown as-is. */
   chordSheetImage: string | null
+  chordSheetPdf: string | null
 }
 
 const short = (text: string) => text.replace(' major', '').replace(' minor', 'm')
@@ -72,6 +73,7 @@ export function buildStageList(show: Show, songs: Record<string, Song>, members:
         youtubeId2: song.youtubeId2 ?? null,
         chordSheet: song.chordSheet ? transposeChordSheet(song.chordSheet, item.transpose) : null,
         chordSheetImage: song.chordSheetImage ?? null,
+        chordSheetPdf: song.chordSheetPdf ?? null,
       })
     })
   }
