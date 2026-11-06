@@ -2,8 +2,7 @@ import { Capacitor } from '@capacitor/core'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
-import Contact from './components/Contact'
-import Landing from './components/Landing'
+import Site from './components/Site'
 import { SharedView } from './components/SharedView'
 import './index.css'
 import { StoreProvider } from './state/store'
@@ -23,10 +22,8 @@ if ('serviceWorker' in navigator) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {showContact ? (
-      <Contact />
-    ) : showLanding ? (
-      <Landing />
+    {showContact || showLanding ? (
+      <Site />
     ) : shareToken ? (
       <SharedView token={shareToken} />
     ) : (

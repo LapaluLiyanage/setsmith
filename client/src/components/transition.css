@@ -1,0 +1,2 @@
+/* Full-screen curtain used for page changes. Hidden until a navigation starts. */
+.curtain{position:fixed;inset:0;z-index:10000;display:none;place-items:center;background:#1d1f22;pointer-events:all;border-radius:0 0 50% 50% / 0 0 8vh 8vh}
