@@ -14,10 +14,13 @@
 .landing .h5:hover{color:#1d1f22;box-shadow:0 0 0 4px rgba(226,242,74,.25)}
 .landing .h6:hover{color:#fff;border-color:#9a9e99}
 /* Cursor follower and pointer-aware cards */
-.landing .cursor-ring,.landing .cursor-dot{position:fixed;left:0;top:0;pointer-events:none;z-index:9998;border-radius:50%;opacity:0}
-.landing .cursor-ring{width:36px;height:36px;border:1.5px solid var(--tx);mix-blend-mode:difference;border-color:#e2f24a}
-.landing .cursor-dot{width:8px;height:8px;background:var(--ac);box-shadow:0 0 0 1.5px var(--tx)}
-@media (pointer:coarse){.landing .cursor-ring,.landing .cursor-dot{display:none}}
+.landing .cursor-pick{position:fixed;left:0;top:0;pointer-events:none;z-index:9998;opacity:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25))}
+.landing .cursor-pick svg{display:block}
+.landing .cursor-pick path{fill:var(--ac);stroke:#1d1f22;stroke-width:2.2;stroke-linejoin:round;transition:fill .2s}
+.landing .cursor-pick.is-hot path{fill:#1d1f22;stroke:var(--ac)}
+.landing.has-pick,.landing.has-pick *{cursor:none}
+.landing.has-pick input,.landing.has-pick textarea{cursor:text}
+@media (pointer:coarse){.landing .cursor-pick{display:none}}
 .landing .tilt{position:relative;overflow:hidden;will-change:transform;transform-style:preserve-3d}
 .landing .tilt::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),rgba(226,242,74,.28),transparent 65%)}
 .landing .tilt:hover::after{opacity:1}

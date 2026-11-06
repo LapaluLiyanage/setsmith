@@ -6,30 +6,32 @@ import { useEffect, useRef, type RefObject } from 'react'
  * Fine pointers only, and skipped when the visitor prefers reduced motion.
  */
 export function PointerFx({ root, cards }: { root: RefObject<HTMLElement | null>; cards: string }) {
-  const dotRef = useRef<HTMLDivElement>(null)
-  const ringRef = useRef<HTMLDivElement>(null)
+  const pickRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = root.current
-    const dot = dotRef.current
-    const ring = ringRef.current
-    if (!el || !dot || !ring) return
+    const pick = pickRef.current
+    if (!el || !pick) return
     if (!matchMedia('(pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-    gsap.set([dot, ring], { xPercent: -50, yPercent: -50, opacity: 0 })
-    const dx = gsap.quickTo(dot, 'x', { duration: 0.08, ease: 'power3' }), dy = gsap.quickTo(dot, 'y', { duration: 0.08, ease: 'power3' })
-    const rx = gsap.quickTo(ring, 'x', { duration: 0.45, ease: 'power3' }), ry = gsap.quickTo(ring, 'y', { duration: 0.45, ease: 'power3' })
-
+    // A guitar pick that follows the pointer (tip on the pointer), leans into fast moves and grows over links.
+    el.classList.add('has-pick')
+    gsap.set(pick, { xPercent: -50, yPercent: -92, opacity: 0, transformOrigin: '50% 92%' })
+    const px = gsap.quickTo(pick, 'x', { duration: 0.12, ease: 'power3' }), py = gsap.quickTo(pick, 'y', { duration: 0.12, ease: 'power3' })
+    const rot = gsap.quickTo(pick, 'rotation', { duration: 0.35, ease: 'power3' })
+    let lastX = 0
     const onMove = (e: PointerEvent) => {
-      dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY)
-      gsap.to([dot, ring], { opacity: 1, duration: 0.2, overwrite: 'auto' })
       const t = e.target as Element
+      const typing = !!t.closest?.('input, textarea, select')
+      px(e.clientX); py(e.clientY)
+      rot(Math.max(-28, Math.min(28, (e.clientX - lastX) * 1.2)))
+      lastX = e.clientX
       const hot = !!t.closest?.('a, button')
       const card = !!t.closest?.('.tilt')
-      gsap.to(ring, { scale: hot ? 1.9 : card ? 1.35 : 1, duration: 0.25, overwrite: 'auto' })
-      gsap.to(dot, { scale: hot ? 0.4 : 1, duration: 0.2, overwrite: 'auto' })
+      gsap.to(pick, { opacity: typing ? 0 : 1, scale: hot ? 1.5 : card ? 1.2 : 1, duration: 0.25, overwrite: 'auto' })
+      pick.classList.toggle('is-hot', hot)
     }
-    const onLeaveWin = () => gsap.to([dot, ring], { opacity: 0, duration: 0.2 })
+    const onLeaveWin = () => gsap.to(pick, { opacity: 0, duration: 0.2 })
 
     // Cards can mount a moment after this effect (page entrance animations), so bind to what exists now
     // and again shortly after.
@@ -57,6 +59,7 @@ export function PointerFx({ root, cards }: { root: RefObject<HTMLElement | null>
     window.addEventListener('pointermove', onMove)
     document.documentElement.addEventListener('pointerleave', onLeaveWin)
     return () => {
+      el.classList.remove('has-pick')
       window.clearTimeout(later)
       window.removeEventListener('pointermove', onMove)
       document.documentElement.removeEventListener('pointerleave', onLeaveWin)
@@ -70,9 +73,10 @@ export function PointerFx({ root, cards }: { root: RefObject<HTMLElement | null>
   }, [root, cards])
 
   return (
-    <>
-      <div ref={ringRef} className="cursor-ring" aria-hidden />
-      <div ref={dotRef} className="cursor-dot" aria-hidden />
-    </>
+    <div ref={pickRef} className="cursor-pick" aria-hidden>
+      <svg width="30" height="34" viewBox="0 0 30 34">
+        <path d="M15 2.5C23 2.5 27.5 11 25.5 19.5 23.8 27 18.5 31.5 15 31.5S6.2 27 4.5 19.5C2.5 11 7 2.5 15 2.5Z" />
+      </svg>
+    </div>
   )
 }
