@@ -33,3 +33,10 @@
 .contact__done h2{margin:0;font-size:28px;letter-spacing:-.02em}
 .contact__done p{margin:0;color:var(--mu)}
 .contact__tick{width:44px;height:44px;border-radius:50%;background:var(--ac);color:var(--ai);display:grid;place-items:center;font-weight:700;font-size:20px;box-shadow:0 0 0 2px var(--tx)}
+.contact__me{margin:8px 0 0;display:grid;grid-template-columns:minmax(0,200px) 1fr;gap:20px;align-items:end;background:var(--p1);border-radius:24px;padding:16px}
+.contact__me img{display:block;width:100%;height:auto;border-radius:16px;aspect-ratio:2/3;object-fit:cover}
+.contact__me figcaption{display:flex;flex-direction:column;gap:6px;font-size:14px;min-width:0}
+.contact__me figcaption b{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.contact__me figcaption span{color:var(--mu);margin-bottom:6px}
+.contact__me a{color:var(--tx);overflow-wrap:anywhere}
+@media (max-width:520px){.contact__me{grid-template-columns:1fr}.contact__me img{max-width:240px}}

@@ -86,6 +86,16 @@ export default function Contact() {
           <span className="contact__eyebrow">CONTACT &amp; SUGGESTIONS</span>
           <h1>Tell us what would make your shows easier.</h1>
           <p>Ideas, questions and bug reports all land in one inbox and get read. You don&rsquo;t need an account, and the email is optional unless you want a reply.</p>
+          <figure className="contact__me">
+            <img src="/landing/lapalu.jpg" alt="Lapalu Liyanage playing acoustic guitar on stage at night" loading="lazy" />
+            <figcaption>
+              <b>Lapalu Liyanage</b>
+              <span>Maker of Setsmith.</span>
+              <a href="mailto:lapaluliyanage@gmail.com">lapaluliyanage@gmail.com</a>
+              <a href="tel:+94774680396">+94 77 468 0396</a>
+              <a href="https://lapalu.me" target="_blank" rel="noopener noreferrer">Portfolio: lapalu.me ↗</a>
+            </figcaption>
+          </figure>
         </section>
 
         <section className="contact__card">
