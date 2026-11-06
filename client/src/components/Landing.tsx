@@ -189,7 +189,6 @@ export default function Landing() {
           <a href="#top" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
             <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1d1f22" /><g fill="#e2f24a" transform="translate(3,3)"><rect x="13" y="1" width="2" height="11" /><ellipse cx="11.5" cy="11" rx="3.5" ry="3" /><path d="M0 15h26l-4.2 6H4.2z" /><rect x="8" y="21" width="10" height="5" /></g></svg>
             <span style={{fontWeight:"600",fontSize:"21px",letterSpacing:"-.02em"}}>Setsmith</span>
-            <span style={{font:"500 10px var(--mono)",letterSpacing:".14em",color:"var(--mu)",paddingLeft:"10px",borderLeft:"1px solid var(--ln)",whiteSpace:"nowrap"}}>BY LAPALU LIYANAGE</span>
           </a>
           <div style={{flex:"1"}}></div>
           {wide && (
