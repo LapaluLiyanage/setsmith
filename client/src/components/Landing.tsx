@@ -198,6 +198,7 @@ export default function Landing() {
               <a href="#features" className="h0" style={{height:"40px",padding:"0 14px",borderRadius:"20px",display:"flex",alignItems:"center",color:"var(--mu)",textDecoration:"none",fontSize:"14px",whiteSpace:"nowrap"}}>Features</a>
               <a href="#how" className="h0" style={{height:"40px",padding:"0 14px",borderRadius:"20px",display:"flex",alignItems:"center",color:"var(--mu)",textDecoration:"none",fontSize:"14px",whiteSpace:"nowrap"}}>How it works</a>
               <a href="#stage" className="h0" style={{height:"40px",padding:"0 14px",borderRadius:"20px",display:"flex",alignItems:"center",color:"var(--mu)",textDecoration:"none",fontSize:"14px",whiteSpace:"nowrap"}}>Stage view</a>
+              <a href="/contact" className="h0" style={{height:"40px",padding:"0 14px",borderRadius:"20px",display:"flex",alignItems:"center",color:"var(--mu)",textDecoration:"none",fontSize:"14px",whiteSpace:"nowrap"}}>Contact</a>
             </nav>
             <button onClick={toggleTheme} aria-label="Toggle theme" className="h1" style={{width:"40px",height:"40px",borderRadius:"50%",border:"1px solid var(--ln)",background:"transparent",color:"var(--mu)",display:"grid",placeItems:"center",cursor:"pointer"}}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
@@ -465,6 +466,7 @@ export default function Landing() {
         <div style={{display:"flex",flexDirection:"column",gap:"6px",alignItems:"flex-start"}}>
           <div style={{display:"flex",gap:"16px",flexWrap:"wrap"}}>
             <a href="https://github.com/LapaluLiyanage/setsmith" style={{color:"var(--tx)"}}>GitHub</a>
+            <a href="/contact" style={{color:"var(--tx)"}}>Contact &amp; suggestions</a>
           </div>
           <a href="https://getsongbpm.com" style={{color:"var(--tx)",font:"500 12px var(--mono)"}}>BPM &amp; key data via GetSongBPM.com</a>
           <span style={{font:"500 11px var(--mono)"}}>© 2026</span>

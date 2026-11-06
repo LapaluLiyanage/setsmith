@@ -303,3 +303,21 @@ using (
   bucket_id = 'show-photos'
   and my_role(((storage.foldername(name))[1])::uuid) in ('manager', 'editor')
 );
+
+-- Contact page and suggestion box. Anyone (signed in or not) can send a message; nobody can read them
+-- back through the API, so they are only visible in the Supabase dashboard (Table editor -> feedback).
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'suggestion' check (kind in ('suggestion', 'question', 'bug', 'other')),
+  name text check (name is null or char_length(name) <= 100),
+  email text check (email is null or char_length(email) <= 200),
+  message text not null check (char_length(message) between 1 and 4000),
+  user_id uuid default auth.uid(),
+  created_at timestamptz not null default now()
+);
+
+alter table feedback enable row level security;
+
+create policy "anyone can send feedback" on feedback
+for insert to anon, authenticated
+with check (true);
