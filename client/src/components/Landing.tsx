@@ -45,6 +45,8 @@ export default function Landing() {
   const [deferred, setDeferred] = useState<InstallPromptEvent | null>(null)
   const [signedIn] = useState(hasSession)
   const root = useRef<HTMLDivElement>(null)
+  const dotRef = useRef<HTMLDivElement>(null)
+  const ringRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const onResize = () => setWide(window.innerWidth > 1060)
@@ -115,6 +117,55 @@ export default function Landing() {
       })
     }, el)
     return () => { document.removeEventListener('click', onAnchor); ctx.revert() }
+  }, [])
+
+  // Cursor follower + pointer-aware cards (fine pointers only, skipped for reduced motion).
+  useEffect(() => {
+    const el = root.current
+    const dot = dotRef.current
+    const ring = ringRef.current
+    if (!el || !dot || !ring) return
+    if (!matchMedia('(pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    gsap.set([dot, ring], { xPercent: -50, yPercent: -50, opacity: 0 })
+    const dx = gsap.quickTo(dot, 'x', { duration: 0.08, ease: 'power3' }), dy = gsap.quickTo(dot, 'y', { duration: 0.08, ease: 'power3' })
+    const rx = gsap.quickTo(ring, 'x', { duration: 0.45, ease: 'power3' }), ry = gsap.quickTo(ring, 'y', { duration: 0.45, ease: 'power3' })
+    const cards = Array.from(el.querySelectorAll<HTMLElement>('#features > div:last-child > div, #why > div:last-child > div, section[data-screen-label="Roles"] > div:nth-child(2) > div'))
+    cards.forEach((c) => c.classList.add('tilt'))
+    const onMove = (e: PointerEvent) => {
+      dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY)
+      gsap.to([dot, ring], { opacity: 1, duration: 0.2, overwrite: 'auto' })
+      const t = e.target as Element
+      const hot = !!t.closest?.('a, button')
+      const card = t.closest?.('.tilt') as HTMLElement | null
+      gsap.to(ring, { scale: hot ? 1.9 : card ? 1.35 : 1, duration: 0.25, overwrite: 'auto' })
+      gsap.to(dot, { scale: hot ? 0.4 : 1, duration: 0.2, overwrite: 'auto' })
+    }
+    const onLeaveWin = () => gsap.to([dot, ring], { opacity: 0, duration: 0.2 })
+    const handlers = cards.map((c) => {
+      const move = (e: PointerEvent) => {
+        const r = c.getBoundingClientRect()
+        const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height
+        c.style.setProperty('--mx', `${e.clientX - r.left}px`)
+        c.style.setProperty('--my', `${e.clientY - r.top}px`)
+        gsap.to(c, { rotationY: (px - 0.5) * 10, rotationX: (0.5 - py) * 10, y: -4, transformPerspective: 900, duration: 0.35, ease: 'power2.out', overwrite: 'auto' })
+      }
+      const leave = () => gsap.to(c, { rotationX: 0, rotationY: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.6)', overwrite: 'auto' })
+      c.addEventListener('pointermove', move)
+      c.addEventListener('pointerleave', leave)
+      return { c, move, leave }
+    })
+    window.addEventListener('pointermove', onMove)
+    document.documentElement.addEventListener('pointerleave', onLeaveWin)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      document.documentElement.removeEventListener('pointerleave', onLeaveWin)
+      handlers.forEach(({ c, move, leave }) => {
+        c.removeEventListener('pointermove', move)
+        c.removeEventListener('pointerleave', leave)
+        c.classList.remove('tilt')
+        gsap.set(c, { clearProps: 'rotationX,rotationY,y,transformPerspective' })
+      })
+    }
   }, [])
 
   const install = async () => {
@@ -419,6 +470,8 @@ export default function Landing() {
           <a href="https://getsongbpm.com" style={{color:"var(--tx)",font:"500 12px var(--mono)"}}>BPM &amp; key data via GetSongBPM.com</a>
           <span style={{font:"500 11px var(--mono)"}}>© 2026</span>
         </div>
-      </footer>    </div>
+      </footer>      <div ref={ringRef} className="cursor-ring" aria-hidden />
+      <div ref={dotRef} className="cursor-dot" aria-hidden />
+    </div>
   )
 }
