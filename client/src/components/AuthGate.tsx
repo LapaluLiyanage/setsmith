@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core'
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../state/store'
@@ -5,6 +6,9 @@ import { useStore } from '../state/store'
 type Mode = 'signin' | 'signup' | 'magic'
 
 const TITLES: Record<Mode, string> = { signin: 'Sign in', signup: 'Create account', magic: 'Email me a link' }
+
+/** Where Supabase sends people back to after an email link or Google sign-in (the landing page lives at /). */
+const APP_URL = `${window.location.origin}/app`
 
 export function AuthScreen() {
   const [mode, setMode] = useState<Mode>('signin')
@@ -23,14 +27,25 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) setMessage({ ok: false, text: error.message })
       } else if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: APP_URL } })
         if (error) setMessage({ ok: false, text: error.message })
         else if (!data.session) setMessage({ ok: true, text: 'Check your inbox and confirm your email, then sign in.' })
       } else {
-        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
+        const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: APP_URL } })
         setMessage(error ? { ok: false, text: error.message } : { ok: true, text: 'Link sent. Open it on this device to sign in.' })
       }
     } finally {
+      setBusy(false)
+    }
+  }
+
+  async function google() {
+    if (!supabase) return
+    setBusy(true)
+    setMessage(null)
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: APP_URL } })
+    if (error) {
+      setMessage({ ok: false, text: error.message })
       setBusy(false)
     }
   }
@@ -45,6 +60,12 @@ export function AuthScreen() {
           Only the person managing setlists needs an account. Editors and viewers who get an invite link
           never see this screen at all — they land straight in the band, no sign-in required.
         </p>
+        {!Capacitor.isNativePlatform() && (
+          <>
+            <button type="button" className="pill pill--lg" onClick={google} disabled={busy}>Continue with Google</button>
+            <p className="muted" style={{ textAlign: 'center', margin: 0 }}>or use your email</p>
+          </>
+        )}
         <div className="gate__tabs" role="tablist">
           {(Object.keys(TITLES) as Mode[]).map((m) => (
             <button type="button" key={m} role="tab" aria-selected={mode === m} className={'lf__preset' + (mode === m ? ' is-on' : '')}
