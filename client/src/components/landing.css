@@ -16,8 +16,9 @@
 /* Cursor follower and pointer-aware cards */
 .landing .cursor-pick{position:fixed;left:0;top:0;pointer-events:none;z-index:9998;opacity:0;filter:drop-shadow(0 4px 6px rgba(0,0,0,.25))}
 .landing .cursor-pick svg{display:block}
-.landing .cursor-pick path{fill:var(--ac);stroke:#1d1f22;stroke-width:2.2;stroke-linejoin:round;transition:fill .2s}
-.landing .cursor-pick.is-hot path{fill:#1d1f22;stroke:var(--ac)}
+.landing .cursor-pick path,.landing .cursor-pick rect,.landing .cursor-pick ellipse{fill:var(--ac);stroke:#1d1f22;stroke-width:2;stroke-linejoin:round;transition:fill .2s,stroke .2s}
+.landing .cursor-pick.is-hot path,.landing .cursor-pick.is-hot rect,.landing .cursor-pick.is-hot ellipse{fill:#1d1f22;stroke:var(--ac)}
+.landing .cursor-note{position:fixed;left:0;top:0;pointer-events:none;z-index:9997;font:700 20px/1 var(--font);color:var(--tx);text-shadow:0 0 0 var(--ac),0 1px 0 var(--ac),0 -1px 0 var(--ac),1px 0 0 var(--ac),-1px 0 0 var(--ac)}
 .landing.has-pick,.landing.has-pick *{cursor:none}
 .landing.has-pick input,.landing.has-pick textarea{cursor:text}
 @media (pointer:coarse){.landing .cursor-pick{display:none}}
