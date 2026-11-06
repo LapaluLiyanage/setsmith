@@ -1,2 +1,13 @@
 /* Full-screen curtain used for page changes. Hidden until a navigation starts. */
 .curtain{position:fixed;inset:0;z-index:10000;display:none;place-items:center;background:#1d1f22;pointer-events:all;border-radius:0 0 50% 50% / 0 0 8vh 8vh}
+
+/* Back-to-top button with a scroll-progress ring */
+.back-top{position:fixed;right:20px;bottom:28px;z-index:9990;width:48px;height:48px;padding:0;border:0;border-radius:50%;background:var(--p2,#fff);color:var(--tx,#1d1f22);box-shadow:0 6px 20px rgba(30,34,20,.22);cursor:pointer;opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;transition:opacity .3s,transform .3s,background .2s}
+.back-top.is-on{opacity:1;transform:none;pointer-events:auto}
+.back-top:hover{background:var(--ac,#e2f24a);transform:translateY(-3px)}
+.back-top svg{display:block;transform:rotate(-90deg)}
+.back-top__track{fill:none;stroke:var(--ln,#dcddd6);stroke-width:3}
+.back-top__bar{fill:none;stroke:var(--tx,#1d1f22);stroke-width:3;stroke-linecap:round}
+.back-top__arrow{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transform:rotate(90deg);transform-origin:24px 24px}
+.landing.has-pick ~ .back-top{cursor:none}
+@media (prefers-reduced-motion:reduce){.back-top{transition:none}}
