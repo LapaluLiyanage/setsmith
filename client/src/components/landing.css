@@ -1,0 +1,15 @@
+/* Landing page extras: hover states, keyframes and focus styles from the Claude Design file. */
+@keyframes ssPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 2px var(--tx),0 0 0 0 rgba(226,242,74,.6)}50%{transform:scale(1.15);box-shadow:0 0 0 2px var(--tx),0 0 0 8px rgba(226,242,74,0)}}
+@keyframes ssUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes ssDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.landing *{animation:none!important}}
+.landing a{color:inherit}
+.landing a:hover{color:var(--tx)}
+.landing :focus-visible{outline:2px solid var(--tx);outline-offset:2px}
+.landing .h0:hover{background:var(--p1);color:var(--tx)}
+.landing .h1:hover{color:var(--tx);background:var(--p1)}
+.landing .h2:hover{color:var(--ai);box-shadow:0 4px 14px var(--sh)}
+.landing .h3:hover{color:var(--ai);box-shadow:0 6px 18px var(--sh)}
+.landing .h4:hover{color:var(--dki);box-shadow:0 4px 14px var(--sh)}
+.landing .h5:hover{color:#1d1f22;box-shadow:0 0 0 4px rgba(226,242,74,.25)}
+.landing .h6:hover{color:#fff;border-color:#9a9e99}

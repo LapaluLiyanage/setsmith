@@ -2,7 +2,7 @@
   "name": "Setsmith",
   "short_name": "Setsmith",
   "description": "Setlist planner for live bands — build the running order, transpose keys, and run the show.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0c0d0e",
