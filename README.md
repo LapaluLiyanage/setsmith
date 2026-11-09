@@ -1,6 +1,11 @@
 # Setsmith
 
-Setlist planner for live bands, built by **FASTUNES**.
+Setlist planner for live bands, built by me ([Lapalu Liyanage](https://github.com/LapaluLiyanage)).
+
+It was first used by **FASTUNES**, the Faculty of Applied Sciences band at Rajarata University of Sri Lanka (RUSL),
+for 3 shows.
+
+**Status: finished.** Setsmith is a completed project, and every item on the roadmap below is done.
 
 Book a show → split it into sessions → add songs from YouTube → assign singers → see each song's
 BPM and key → rearrange with drag-and-drop or quick swap → send the band a PDF with the YouTube links.
