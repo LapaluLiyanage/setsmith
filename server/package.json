@@ -1,7 +1,9 @@
 {
   "name": "setsmith-server",
+  "author": "Lapalu Liyanage",
+  "license": "MIT",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "node --watch --env-file-if-exists=.env src/index.js",

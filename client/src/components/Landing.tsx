@@ -2,6 +2,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useEffect, useRef, useState } from 'react'
 import { useTheme } from '../state/theme'
+import MusicNews from './MusicNews'
 import { PointerFx } from './PointerFx'
 import './landing.css'
 
@@ -41,7 +42,7 @@ function Sparkline() {
   )
 }
 
-/** Public landing page (ported from the Claude Design "Setsmith Landing" file). The app itself lives at /app. */
+/** Public landing page (ported from the "Setsmith Landing" design file). The app itself lives at /app. */
 export default function Landing() {
   const [, toggleTheme] = useTheme()
   const [wide, setWide] = useState(() => window.innerWidth > 1060)
@@ -391,6 +392,7 @@ export default function Landing() {
           <img src="/landing/library.jpg" alt="Setsmith song library" style={{display:"block",width:"100%",height:"auto"}} />
         </div>
       </section>
+      <MusicNews />
       <section data-screen-label="Under the hood" style={{background:"var(--p1)",borderRadius:"24px",padding:"28px clamp(20px,3vw,40px)",display:"flex",flexDirection:"column",gap:"18px"}}>
         <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
           <span style={{font:"500 11px var(--mono)",letterSpacing:".12em",color:"var(--mu)",flex:"1"}}>UNDER THE HOOD</span>

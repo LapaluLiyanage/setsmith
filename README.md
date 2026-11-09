@@ -121,7 +121,7 @@ supabase/  schema.sql with row-level security per band
 4. ~~Song library view with filters~~ (search, singer, BPM range, Camelot key, language; add to any session)
 5. ~~Singer key ranges and transpose suggestions~~ (set a singer's comfortable tonic range in Band; the song drawer offers a one-tap transpose)
 6. ~~Stage view for phones~~ (big-type now/next, beat-pulse dot, swipe or arrow keys, keeps the screen on)
-7. ~~Apply the Claude Design UI~~ (setlist editor, add-song, band and export panels; light/dark;
+7. ~~Apply the redesigned UI~~ (setlist editor, add-song, band and export panels; light/dark;
    GSAP card entrance, FLIP reorder, toasts; Three.js energy map)
 
 ## Deploy
@@ -134,3 +134,9 @@ One Node service hosts the API and the built client (`render.yaml` is a Render B
 4. Optional: turn off "Confirm email" in Supabase Auth providers if you want sign-up to work without an inbox round trip.
 
 The same build also works on any static host for the client alone; YouTube search and BPM lookup then need the API reachable at `/api`.
+
+## License
+
+Setsmith is released under the [MIT License](LICENSE) © 2026 Lapalu Liyanage. See [RELEASE_NOTES.md](RELEASE_NOTES.md)
+for what is in 1.0.0, [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the licences of the libraries, font and
+services it uses, and [SECURITY.md](SECURITY.md) for reporting a vulnerability.

@@ -34,3 +34,13 @@ export const lookupBpm = (title: string, artist: string) =>
   getJson<{ matches: BpmMatch[] }>(
     `/api/bpm?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`,
   ).then((r) => r.matches)
+
+export interface NewsArticle {
+  title: string
+  url: string
+  summary: string
+  image: string | null
+  publishedAt: string | null
+}
+
+export const fetchMusicNews = () => getJson<{ articles: NewsArticle[] }>('/api/news').then((r) => r.articles)

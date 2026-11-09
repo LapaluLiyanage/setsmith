@@ -8,3 +8,8 @@ dist/
 # Claude Code local files
 .claude/
 CLAUDE.local.md
+
+# Local AI assistant files
+CLAUDE.md
+.claude/
+.mcp.json

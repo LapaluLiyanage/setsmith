@@ -1,5 +1,9 @@
 {
   "name": "setsmith",
+  "version": "1.0.0",
+  "description": "Setlist planner for live bands: sessions, singers, BPM and key, Stage view, chord sheets and PDF export.",
+  "author": "Lapalu Liyanage",
+  "license": "MIT",
   "private": true,
   "workspaces": ["client", "server"],
   "scripts": {
