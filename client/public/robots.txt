@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://setsmith.lapalu.me/sitemap.xml
